@@ -17,7 +17,8 @@ from src.symbolic_solvers.fol_solver.Formula import FOL_Formula
 # `src/symbolic_solvers/Prover9/bin`.  We resolve the absolute path here to
 # avoid issues with the working directory when invoking the solver.
 PROVER9_PATH = os.path.join(os.path.dirname(__file__), '..', 'Prover9', 'bin')
-os.environ['PROVER9'] = PROVER9_PATH
+#os.environ['PROVER9'] = PROVER9_PATH # Linux version
+os.environ['PROVER9'] = '/opt/homebrew/bin'  # macOS version installed via Homebrew
 
 class FOL_Prover9_Program:
     def __init__(self, logic_program:str, dataset_name = 'FOLIO') -> None:
@@ -96,7 +97,7 @@ if __name__ == "__main__":
     ## ¬∀x (Movie(x) → HappyEnding(x))
     ## ∃x (Movie(x) → ¬HappyEnding(x))
     # ground-truth: True
-    logic_program = """Premises:
+    logic_program_1 = """Premises:
     ¬∀x (Movie(x) → HappyEnding(x)) ::: Not all movie has a happy ending.
     Movie(titanic) ::: Titanic is a movie.
     ¬HappyEnding(titanic) ::: Titanic does not have a happy ending.
@@ -107,7 +108,7 @@ if __name__ == "__main__":
     """
 
     # ground-truth: True
-    logic_program = """Premises:
+    logic_program_2 = """Premises:
     ∀x (Drinks(x) → Dependent(x)) ::: All people who regularly drink coffee are dependent on caffeine.
     ∀x (Drinks(x) ⊕ Jokes(x)) ::: People either regularly drink coffee or joke about being addicted to caffeine.
     ∀x (Jokes(x) → ¬Unaware(x)) ::: No one who jokes about being addicted to caffeine is unaware that caffeine is a drug. 
@@ -118,7 +119,7 @@ if __name__ == "__main__":
     """
 
     # ground-truth: True
-    logic_program = """Premises:
+    logic_program_3 = """Premises:
     ∀x (Drinks(x) → Dependent(x)) ::: All people who regularly drink coffee are dependent on caffeine.
     ∀x (Drinks(x) ⊕ Jokes(x)) ::: People either regularly drink coffee or joke about being addicted to caffeine.
     ∀x (Jokes(x) → ¬Unaware(x)) ::: No one who jokes about being addicted to caffeine is unaware that caffeine is a drug. 
@@ -129,7 +130,7 @@ if __name__ == "__main__":
     """
 
     # ground-truth: Unknown
-    logic_program = """Premises:
+    logic_program_4 = """Premises:
     Czech(miroslav) ∧ ChoralConductor(miroslav) ∧ Specialize(miroslav, renaissance) ∧ Specialize(miroslav, baroque) ::: Miroslav Venhoda was a Czech choral conductor who specialized in the performance of Renaissance and Baroque music.
     ∀x (ChoralConductor(x) → Musician(x)) ::: Any choral conductor is a musician.
     ∃x (Musician(x) ∧ Love(x, music)) ::: Some musicians love music.
@@ -139,7 +140,7 @@ if __name__ == "__main__":
     """
 
     # ground-truth: True
-    logic_program = """Premises:
+    logic_program_5 = """Premises:
     Czech(miroslav) ∧ ChoralConductor(miroslav) ∧ Specialize(miroslav, renaissance) ∧ Specialize(miroslav, baroque) ::: Miroslav Venhoda was a Czech choral conductor who specialized in the performance of Renaissance and Baroque music.
     ∀x (ChoralConductor(x) → Musician(x)) ::: Any choral conductor is a musician.
     ∃x (Musician(x) ∧ Love(x, music)) ::: Some musicians love music.
@@ -149,7 +150,7 @@ if __name__ == "__main__":
     """
 
     # ground-truth: False
-    logic_program = """Premises:
+    logic_program_6 = """Premises:
     Czech(miroslav) ∧ ChoralConductor(miroslav) ∧ Specialize(miroslav, renaissance) ∧ Specialize(miroslav, baroque) ::: Miroslav Venhoda was a Czech choral conductor who specialized in the performance of Renaissance and Baroque music.
     ∀x (ChoralConductor(x) → Musician(x)) ::: Any choral conductor is a musician.
     ∃x (Musician(x) ∧ Love(x, music)) ::: Some musicians love music.
@@ -160,7 +161,7 @@ if __name__ == "__main__":
 
     # ground-truth: Unknown
     # Premises:\nall x.(perform_in_school_talent_shows_often(x) -> (attend_school_events(x) & very_engaged_with_school_events(x))) ::: If people perform in school talent shows often, then they attend and are very engaged with school events.\nall x.(perform_in_school_talent_shows_often(x) ^ (inactive_member(x) & disinterested_member(x))) ::: People either perform in school talent shows often or are inactive and disinterested members of their community.\nall x.(chaperone_high_school_dances(x) -> not student_attend_school(x)) ::: If people chaperone high school dances, then they are not students who attend the school.\nall x.((inactive_member(x) & disinterested_member(x)) -> chaperone_high_school_dances(x)) ::: All people who are inactive and disinterested members of their community chaperone high school dances.\nall x.((young_child(x) | teenager(x)) & wish_to_further_academic_careers(x) & wish_to_further_educational_opportunities(x) -> student_attend_school(x)) ::: All young children and teenagers who wish to further their academic careers and educational opportunities are students who attend the school.\n(attend_school_events(bonnie) & very_engaged_with_school_events(bonnie) & student_attend_school(bonnie)) ^ (not attend_school_events(bonnie) & not very_engaged_with_school_events(bonnie) & not student_attend_school(bonnie)) ::: Bonnie either both attends and is very engaged with school events and is a student who attends the school, or she neither attends and is very engaged with school events nor is a student who attends the school.\nConclusion:\nperform_in_school_talent_shows_often(bonnie) ::: Bonnie performs in school talent shows often."
-    logic_program = """Premises:
+    logic_program_7 = """Premises:
     ∀x (TalentShows(x) → Engaged(x)) ::: If people perform in school talent shows often, then they attend and are very engaged with school events.
     ∀x (TalentShows(x) ∨ Inactive(x)) ::: People either perform in school talent shows often or are inactive and disinterested members of their community.
     ∀x (Chaperone(x) → ¬Students(x)) ::: If people chaperone high school dances, then they are not students who attend the school.
@@ -171,7 +172,7 @@ if __name__ == "__main__":
     """
 
     # ground-truth: False
-    logic_program = """Premises:
+    logic_program_8 = """Premises:
     MusicPiece(symphonyNo9) ::: Symphony No. 9 is a music piece.
     ∀x ∃z (¬Composer(x) ∨ (Write(x,z) ∧ MusicPiece(z))) ::: Composers write music pieces.
     Write(beethoven, symphonyNo9) ::: Beethoven wrote Symphony No. 9.
@@ -181,7 +182,7 @@ if __name__ == "__main__":
     ¬Conductor(beethoven) ::: Beethoven is not a conductor."""
 
     # ground-truth: True
-    logic_program_1 = """Predicates:
+    logic_program_9 = """Predicates:
     JapaneseCompany(x) ::: x is a Japanese game company.
     Create(x, y) ::: x created the game y.
     Top10(x) ::: x is in the Top 10 list.
@@ -194,7 +195,7 @@ if __name__ == "__main__":
     Conclusion:
     Top10(legendOfZelda) ::: The Legend of Zelda is in the Top 10 list."""
 
-    logic_program_2 = """Premises:
+    logic_program_10 = """Premises:
     ∀x (Listed(x) → ¬NegativeReviews(x)) ::: If the restaurant is listed in Yelp’s recommendations, then the restaurant does not receive many negative reviews.
     ∀x (GreaterThanNine(x) → Listed(x)) ::: All restaurants with a rating greater than 9 are listed in Yelp’s recommendations.
     ∃x (¬TakeOut(x) ∧ NegativeReviews(x)) ::: Some restaurants that do not provide take-out service receive many negative reviews.
@@ -203,6 +204,20 @@ if __name__ == "__main__":
     Conclusion:
     TakeOut(subway) ∧ ¬NegativeReviews(subway) ::: Subway provides take-out service and does not receive many negative reviews."""
     
-    prover9_program = FOL_Prover9_Program(logic_program_1) # logic_program_2
-    answer, error_message = prover9_program.execute_program()
-    print(answer, error_message)
+    logic_programs = [
+        logic_program_1, logic_program_2, logic_program_3, logic_program_4, logic_program_5,
+        logic_program_6, logic_program_7, logic_program_8, logic_program_9, logic_program_10
+    ]
+    # ground-truth: T, T, T, U, T, F, U, F, T, T
+    
+    # run all test cases
+    for i, logic_program in enumerate(logic_programs, 1):
+        print(f"=== running test case {i} ===")
+        prover9_program = FOL_Prover9_Program(logic_program)
+        if prover9_program.flag:  # 检查解析是否成功
+            answer, error_message = prover9_program.execute_program()
+            print(f"result: {answer}")
+            if error_message:
+                print(f"error message: {error_message}")
+        else:
+            print("logic program parsing failed")

@@ -1,5 +1,9 @@
 from collections import OrderedDict
-from .code_translator import *
+try:
+    from .code_translator import *
+except ImportError:
+    # 当直接运行此文件时，使用绝对导入
+    from code_translator import *
 import subprocess
 from subprocess import check_output
 from os.path import join
@@ -217,5 +221,5 @@ is_valid(Exists([m:meals], eats(Vladimir, m) == poached_eggs)) ::: (E)'''
     print(z3_program.standard_code)
 
     output, error_message = z3_program.execute_program()
-    print(output)
+    print(output, error_message)
     print(z3_program.answer_mapping(output))

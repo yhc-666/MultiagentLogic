@@ -70,8 +70,8 @@ class LogicInferenceEngine:
             }
             for key in ['LP', 'FOL', 'CSP', 'SAT']:
                 logic_str = example[key][0]
-                predicted, flag, _ = self.safe_execute_program(key, logic_str, example['id'])
-                result[f'flag_{key}'] = flag
+                predicted, status_code, _ = self.safe_execute_program(key, logic_str, example['id'])
+                result[f'{key}_status_code'] = status_code
                 result[f'{key}_predicted_answer'] = predicted
             outputs.append(result)
 
