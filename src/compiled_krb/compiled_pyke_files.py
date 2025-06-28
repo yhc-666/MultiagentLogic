@@ -13,10 +13,10 @@ except NameError:
 
 def get_target_pkg():
     return target_pkg.target_pkg(__name__, __file__, pyke_version, loader, {
-         ('', '.cache_program/', 'facts.kfb'):
-           [1751103361.2256231, 'facts.fbc'],
-         ('', '.cache_program/', 'rules.krb'):
-           [1751103361.229751, 'rules_fc.py'],
+         ('', 'symbolic_solvers/pyke_solver/.cache_program/', 'facts.kfb'):
+           [1751128316.239279, 'facts.fbc'],
+         ('', 'symbolic_solvers/pyke_solver/.cache_program/', 'rules.krb'):
+           [1751128316.244017, 'rules_fc.py'],
         },
         compiler_version)
 

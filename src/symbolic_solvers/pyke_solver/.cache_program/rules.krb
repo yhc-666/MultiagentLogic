@@ -1,0 +1,52 @@
+rule1
+	foreach
+		facts.Quiet($x, True)
+		facts.Cold($x, True)
+	assert
+		facts.Smart($x, True)
+
+rule2
+	foreach
+		facts.Red($x, True)
+		facts.Cold($x, True)
+	assert
+		facts.Round($x, True)
+
+rule3
+	foreach
+		facts.Kind($x, True)
+		facts.Rough($x, True)
+	assert
+		facts.Red($x, True)
+
+rule4
+	foreach
+		facts.Quiet($x, True)
+	assert
+		facts.Rough($x, True)
+
+rule5
+	foreach
+		facts.Cold($x, True)
+		facts.Smart($x, True)
+	assert
+		facts.Red($x, True)
+
+rule6
+	foreach
+		facts.Rough($x, True)
+	assert
+		facts.Cold($x, True)
+
+rule7
+	foreach
+		facts.Red($x, True)
+	assert
+		facts.Rough($x, True)
+
+rule8
+	foreach
+		facts.Smart(Dave, True)
+		facts.Kind(Dave, True)
+	assert
+		facts.Quiet(Dave, True)
