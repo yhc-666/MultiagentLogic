@@ -1,6 +1,5 @@
 .DS_Store
 __pycache__/
 *.pyc
-compiled_krb/
 *.log
 scripts/*.sh~

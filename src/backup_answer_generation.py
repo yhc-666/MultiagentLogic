@@ -2,6 +2,12 @@ import json
 import random
 import os
 
+
+"""
+Can be used to generate backup answers if the solver fails
+Optional to be implemented
+"""
+
 class Backup_Answer_Generator:
     def __init__(self, dataset_name, backup_strategy, backup_LLM_result_path) -> None:
         self.dataset_name = dataset_name

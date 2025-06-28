@@ -313,9 +313,8 @@ class Pyke_Program:
 
 
 if __name__ == "__main__":
-    # 以下是测试用例，展示了不同类型的逻辑推理问题
+    # test pyke solver
 
-    # 测试案例：复杂的多条件推理
     logic_program = """Predicates:
     Round($x, bool) ::: Is x round?
     Red($x, bool) ::: Is x red?

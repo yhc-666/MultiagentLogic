@@ -8,7 +8,7 @@ from symbolic_solvers.csp_solver.csp_solver import CSP_Program
 from symbolic_solvers.z3_solver.sat_problem_solver import LSAT_Z3_Program
 from backup_answer_generation import Backup_Answer_Generator
 
-
+# currently 4 SLs are from different datasets for MVP, the mapping will be adjusted in the future
 PROGRAM_CLASS = {
     'LP': (Pyke_Program, 'ProntoQA'),
     'FOL': (FOL_Prover9_Program, 'FOLIO'),
@@ -22,9 +22,10 @@ class LogicInferenceEngine:
         self.args = args
         self.dataset = self.load_logic_programs(args.input_file)
         self.output_file = args.output_file
+
+        # optional, use LLMwCOT & random guess as backup answers in case solver fails
         self.backup_strategy = args.backup_strategy
         self.backup_LLM_result_path = args.backup_LLM_result_path
-
         self.backup_generators = {
             key: Backup_Answer_Generator(name, self.backup_strategy, self.backup_LLM_result_path)
             for key, (_, name) in PROGRAM_CLASS.items()
@@ -45,7 +46,7 @@ class LogicInferenceEngine:
         cls, dataset_name = PROGRAM_CLASS[key]
         program = cls(logic_program, dataset_name)
 
-        if not getattr(program, 'flag', True):
+        if not getattr(program, 'flag', True): # flag 表示是否成功parse逻辑程序SL, 不代表execute成功与否
             answer = self.backup_generators[key].get_backup_answer(example_id)
             return answer, 'parsing error', ''
 
@@ -78,18 +79,24 @@ class LogicInferenceEngine:
         self.cleanup()
 
     def cleanup(self):
-        compiled_dir = './models/compiled_krb'
+        """
+        remove the compiled krb directory
+        """
+        cache_program_dir = 'src/symbolic_solvers/pyke_solver/.cache_program'
+        compiled_dir = 'src/compiled_krb'
+        if os.path.exists(cache_program_dir):
+            print('removing cache_program')
+            os.system(f'rm -rf {cache_program_dir}')
         if os.path.exists(compiled_dir):
             print('removing compiled_krb')
             os.system(f'rm -rf {compiled_dir}')
-
 
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--input_file', type=str, default=os.path.join('sample_data', 'sample_input.json'))
     parser.add_argument('--output_file', type=str, default=os.path.join('sample_data', 'sample_output.json'))
     parser.add_argument('--backup_strategy', type=str, default='random', choices=['random', 'LLM'])
-    parser.add_argument('--backup_LLM_result_path', type=str, default='')
+    parser.add_argument('--backup_LLM_result_path', type=str, default='') # path to the LLMwCOT result
     return parser.parse_args()
 
 

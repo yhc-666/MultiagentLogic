@@ -1,9 +1,16 @@
 import os
 import re
+import sys
 from nltk.inference.prover9 import *
 from nltk.sem.logic import NegatedExpression
-from .fol_prover9_parser import Prover9_FOL_Formula
-from .Formula import FOL_Formula
+
+# 添加当前项目根目录到路径，支持绝对导入
+current_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.join(current_dir, '..', '..', '..')
+sys.path.insert(0, project_root)
+
+from src.symbolic_solvers.fol_solver.fol_prover9_parser import Prover9_FOL_Formula
+from src.symbolic_solvers.fol_solver.Formula import FOL_Formula
 
 # set the path to the prover9 executable
 # the prover9 binaries are shipped with this repository under
@@ -174,7 +181,7 @@ if __name__ == "__main__":
     ¬Conductor(beethoven) ::: Beethoven is not a conductor."""
 
     # ground-truth: True
-    logic_program = """Predicates:
+    logic_program_1 = """Predicates:
     JapaneseCompany(x) ::: x is a Japanese game company.
     Create(x, y) ::: x created the game y.
     Top10(x) ::: x is in the Top 10 list.
@@ -187,7 +194,7 @@ if __name__ == "__main__":
     Conclusion:
     Top10(legendOfZelda) ::: The Legend of Zelda is in the Top 10 list."""
 
-    logic_program = """Premises:
+    logic_program_2 = """Premises:
     ∀x (Listed(x) → ¬NegativeReviews(x)) ::: If the restaurant is listed in Yelp’s recommendations, then the restaurant does not receive many negative reviews.
     ∀x (GreaterThanNine(x) → Listed(x)) ::: All restaurants with a rating greater than 9 are listed in Yelp’s recommendations.
     ∃x (¬TakeOut(x) ∧ NegativeReviews(x)) ::: Some restaurants that do not provide take-out service receive many negative reviews.
@@ -196,6 +203,6 @@ if __name__ == "__main__":
     Conclusion:
     TakeOut(subway) ∧ ¬NegativeReviews(subway) ::: Subway provides take-out service and does not receive many negative reviews."""
     
-    prover9_program = FOL_Prover9_Program(logic_program)
+    prover9_program = FOL_Prover9_Program(logic_program_1) # logic_program_2
     answer, error_message = prover9_program.execute_program()
     print(answer)

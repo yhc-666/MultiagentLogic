@@ -12,12 +12,12 @@
     "answer": "LP: A, FOL: A, CSP: D, SAT: E",
     "flag_LP": "success",
     "LP_predicted_answer": "A",
-    "flag_FOL": "success",
-    "FOL_predicted_answer": "A",
+    "flag_FOL": "execution error",
+    "FOL_predicted_answer": "B",
     "flag_CSP": "success",
     "CSP_predicted_answer": "D",
     "flag_SAT": "parsing error",
-    "SAT_predicted_answer": "E"
+    "SAT_predicted_answer": "B"
   },
   {
     "id": "002",
@@ -32,7 +32,7 @@
     "answer": "LP: A, FOL: A, CSP: D, SAT: E",
     "flag_LP": "success",
     "LP_predicted_answer": "A",
-    "flag_FOL": "success",
+    "flag_FOL": "execution error",
     "FOL_predicted_answer": "A",
     "flag_CSP": "success",
     "CSP_predicted_answer": "D",
