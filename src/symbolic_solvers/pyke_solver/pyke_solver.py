@@ -414,7 +414,7 @@ Green(Harry, False) ::: Harry is not green."""
         # print(pyke_program.Predicates)
 
         result, error_message = pyke_program.execute_program()
-        print(result)
+        print(result, error_message)
 
     complied_krb_dir = './compiled_krb'
     if os.path.exists(complied_krb_dir):
