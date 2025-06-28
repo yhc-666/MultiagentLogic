@@ -1,3 +1,4 @@
+import os
 import re
 from nltk.inference.prover9 import *
 from nltk.sem.logic import NegatedExpression
@@ -5,8 +6,11 @@ from .fol_prover9_parser import Prover9_FOL_Formula
 from .Formula import FOL_Formula
 
 # set the path to the prover9 executable
-# os.environ['PROVER9'] = '../Prover9/bin'
-os.environ['PROVER9'] = './models/symbolic_solvers/Prover9/bin'
+# the prover9 binaries are shipped with this repository under
+# `src/symbolic_solvers/Prover9/bin`.  We resolve the absolute path here to
+# avoid issues with the working directory when invoking the solver.
+PROVER9_PATH = os.path.join(os.path.dirname(__file__), '..', 'Prover9', 'bin')
+os.environ['PROVER9'] = PROVER9_PATH
 
 class FOL_Prover9_Program:
     def __init__(self, logic_program:str, dataset_name = 'FOLIO') -> None:

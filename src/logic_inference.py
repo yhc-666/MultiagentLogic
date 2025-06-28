@@ -1,103 +1,99 @@
+import argparse
 import json
 import os
-from tqdm import tqdm
-from symbolic_solvers.fol_solver.prover9_solver import FOL_Prover9_Program
+
 from symbolic_solvers.pyke_solver.pyke_solver import Pyke_Program
+from symbolic_solvers.fol_solver.prover9_solver import FOL_Prover9_Program
 from symbolic_solvers.csp_solver.csp_solver import CSP_Program
 from symbolic_solvers.z3_solver.sat_problem_solver import LSAT_Z3_Program
-import argparse
-import random
 from backup_answer_generation import Backup_Answer_Generator
+
+
+PROGRAM_CLASS = {
+    'LP': (Pyke_Program, 'ProntoQA'),
+    'FOL': (FOL_Prover9_Program, 'FOLIO'),
+    'CSP': (CSP_Program, 'LogicalDeduction'),
+    'SAT': (LSAT_Z3_Program, 'AR-LSAT'),
+}
+
 
 class LogicInferenceEngine:
     def __init__(self, args):
         self.args = args
-        self.dataset_name = args.dataset_name
-        self.split = args.split
-        self.model_name = args.model_name
-        self.save_path = args.save_path
+        self.dataset = self.load_logic_programs(args.input_file)
+        self.output_file = args.output_file
         self.backup_strategy = args.backup_strategy
+        self.backup_LLM_result_path = args.backup_LLM_result_path
 
-        self.dataset = self.load_logic_programs()
-        program_executor_map = {'FOLIO': FOL_Prover9_Program, 
-                                'ProntoQA': Pyke_Program, 
-                                'ProofWriter': Pyke_Program,
-                                'LogicalDeduction': CSP_Program,
-                                'AR-LSAT': LSAT_Z3_Program}
-        self.program_executor = program_executor_map[self.dataset_name]
-        self.backup_generator = Backup_Answer_Generator(self.dataset_name, self.backup_strategy, self.args.backup_LLM_result_path)
+        self.backup_generators = {
+            key: Backup_Answer_Generator(name, self.backup_strategy, self.backup_LLM_result_path)
+            for key, (_, name) in PROGRAM_CLASS.items()
+        }
 
-    def load_logic_programs(self):
-        with open(os.path.join('./outputs/logic_programs', f'{self.dataset_name}_{self.split}_{self.model_name}.json')) as f:
+    def load_logic_programs(self, input_file):
+        with open(input_file, 'r') as f:
             dataset = json.load(f)
-        print(f"Loaded {len(dataset)} examples from {self.split} split.")
+        print(f"Loaded {len(dataset)} examples from {input_file}")
         return dataset
-    
+
     def save_results(self, outputs):
-        if not os.path.exists(self.save_path):
-            os.makedirs(self.save_path)
-        
-        with open(os.path.join(self.save_path, f'{self.dataset_name}_{self.split}_{self.model_name}_backup-{self.backup_strategy}.json'), 'w') as f:
+        os.makedirs(os.path.dirname(self.output_file), exist_ok=True)
+        with open(self.output_file, 'w') as f:
             json.dump(outputs, f, indent=2, ensure_ascii=False)
 
-    def safe_execute_program(self, id, logic_program):
-        program = self.program_executor(logic_program, self.dataset_name)
-        # cannot parse the program
-        if program.flag == False:
-            answer = self.backup_generator.get_backup_answer(id)
+    def safe_execute_program(self, key, logic_program, example_id):
+        cls, dataset_name = PROGRAM_CLASS[key]
+        program = cls(logic_program, dataset_name)
+
+        if not getattr(program, 'flag', True):
+            answer = self.backup_generators[key].get_backup_answer(example_id)
             return answer, 'parsing error', ''
-        # execuate the program
-        answer, error_message = program.execute_program()
-        # not executable
+
+        answer, err = program.execute_program()
         if answer is None:
-            answer = self.backup_generator.get_backup_answer(id)
-            return answer, 'execution error', error_message
-        # successfully executed
-        answer = program.answer_mapping(answer)
-        return answer, 'success', ''
+            answer = self.backup_generators[key].get_backup_answer(example_id)
+            return answer, 'execution error', err
+
+        mapped = program.answer_mapping(answer)
+        return mapped, 'success', ''
 
     def inference_on_dataset(self):
         outputs = []
-        error_count = 0
-        
-        for example in tqdm(self.dataset):
-            # execute the logic program
-            answer, flag, error_message = self.safe_execute_program(example['id'], example['raw_logic_programs'][0].strip())
-            if not flag == 'success':
-                error_count += 1
+        for example in self.dataset:
+            result = {
+                'id': example.get('id'),
+                'context': example.get('context'),
+                'question': example.get('question'),
+                'option': example.get('options'),
+                'answer': example.get('answer'),
+            }
+            for key in ['LP', 'FOL', 'CSP', 'SAT']:
+                logic_str = example[key][0]
+                predicted, flag, _ = self.safe_execute_program(key, logic_str, example['id'])
+                result[f'flag_{key}'] = flag
+                result[f'{key}_predicted_answer'] = predicted
+            outputs.append(result)
 
-            # create output
-            output = {'id': example['id'], 
-                    'context': example['context'],
-                    'question': example['question'], 
-                    'answer': example['answer'],
-                    'flag': flag,
-                    'predicted_answer': answer}
-            outputs.append(output)
-        
-        print(f"Error count: {error_count}")
         self.save_results(outputs)
         self.cleanup()
 
     def cleanup(self):
-        complied_krb_dir = './models/compiled_krb'
-        if os.path.exists(complied_krb_dir):
+        compiled_dir = './models/compiled_krb'
+        if os.path.exists(compiled_dir):
             print('removing compiled_krb')
-            os.system(f'rm -rf {complied_krb_dir}')
+            os.system(f'rm -rf {compiled_dir}')
+
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--dataset_name', type=str)
-    parser.add_argument('--split', type=str, default='dev')
-    parser.add_argument('--save_path', type=str, default='./outputs/logic_inference')
+    parser.add_argument('--input_file', type=str, default=os.path.join('sample_data', 'sample_input.json'))
+    parser.add_argument('--output_file', type=str, default=os.path.join('sample_data', 'sample_output.json'))
     parser.add_argument('--backup_strategy', type=str, default='random', choices=['random', 'LLM'])
-    parser.add_argument('--backup_LLM_result_path', type=str, default='../baselines/results')
-    parser.add_argument('--model_name', type=str, default='text-davinci-003')
-    parser.add_argument('--timeout', type=int, default=60)
-    args = parser.parse_args()
-    return args
+    parser.add_argument('--backup_LLM_result_path', type=str, default='')
+    return parser.parse_args()
 
-if __name__ == "__main__":
+
+if __name__ == '__main__':
     args = parse_args()
     engine = LogicInferenceEngine(args)
     engine.inference_on_dataset()
