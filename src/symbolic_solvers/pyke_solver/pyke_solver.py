@@ -1,6 +1,4 @@
 import os
-import sys
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
 from pyke import knowledge_engine
 import re
 
@@ -43,9 +41,8 @@ class Pyke_Program:
             self.flag = False
 
         # 不同数据集的答案映射函数
-        self.answer_map = {'ProntoQA': self.answer_map_prontoqa,
+        self.answer_map = {'ProntoQA': self.answer_map_prontoqa, 
                            'ProofWriter': self.answer_map_proofwriter}
-        self.reasoning_log = ""
 
     def parse_logic_program(self):
         """
@@ -62,16 +59,15 @@ class Pyke_Program:
         """
         keywords = ['Query:', 'Rules:', 'Facts:', 'Predicates:']
         program_str = self.logic_program
-
-        # 逐个解析各个部分，同时保留包含注释的原始行
+        
+        # 逐个解析各个部分
         for keyword in keywords:
             try:
-                program_str, segment_list, raw_list = self._parse_segment(program_str, keyword)
+                program_str, segment_list = self._parse_segment(program_str, keyword)
+                # 将解析结果设置为类属性（去掉冒号）
                 setattr(self, keyword[:-1], segment_list)
-                setattr(self, f"{keyword[:-1]}_raw", raw_list)
-            except Exception:
+            except:
                 setattr(self, keyword[:-1], None)
-                setattr(self, f"{keyword[:-1]}_raw", None)
 
         return self.validate_program()
 
@@ -88,12 +84,11 @@ class Pyke_Program:
         """
         remain_program_str, segment = program_str.split(key_phrase)
         segment_list = segment.strip().split('\n')
-        raw_segment_list = [line.strip() for line in segment_list]
-
+        
         # 清理每行，移除注释部分（:::后的内容）
         for i in range(len(segment_list)):
             segment_list[i] = segment_list[i].split(':::')[0].strip()
-        return remain_program_str, segment_list, raw_segment_list
+        return remain_program_str, segment_list
 
     def validate_program(self):
         """
@@ -316,114 +311,6 @@ class Pyke_Program:
         else:
             return 'B'  # 错误
 
-    # ------------------------------------------------------------------
-    # Additional helper functions for revealing reasoning process
-
-    def _parse_fact(self, fact_str):
-        match = re.match(r"(\w+)\(([^,]+),\s*(True|False)\)", fact_str)
-        if not match:
-            return None
-        predicate, entity, value = match.groups()
-        return predicate, entity, value == 'True'
-
-    def _parse_rule(self, rule_str):
-        body, head = rule_str.split('>>>')
-        premises = [p.strip() for p in body.strip().split('&&')]
-        conclusions = [c.strip() for c in head.strip().split('&&')]
-        return [self._parse_fact(p) for p in premises], [self._parse_fact(c) for c in conclusions]
-
-    def execute_program_with_reasoning(self):
-        """Execute program using a simple forward chaining engine and return reasoning log."""
-        facts = set()
-        for f in self.Facts:
-            pf = self._parse_fact(f)
-            if pf and '$' not in pf[1]:
-                facts.add(pf)
-
-        rules = [self._parse_rule(r) for r in self.Rules]
-        reasoning = []
-        reasoning.append(
-            "We first define following predicates and corresponding natural language explanations:"
-        )
-        for p in (self.Predicates_raw or []):
-            reasoning.append(p)
-
-        reasoning.append("We have following known facts from the context:")
-        for f in (self.Facts_raw or []):
-            reasoning.append(f)
-
-        reasoning.append("We have following known rules from the context:")
-        for idx, r in enumerate(self.Rules_raw or [], start=1):
-            reasoning.append(f"rule{idx}: {r}")
-
-        reasoning.append("Now begin reasoning to obtain all implied facts:")
-
-        applied = [0] * len(rules)
-        new_facts = set()
-
-        changed = True
-        while changed:
-            changed = False
-            for idx, (premises, conclusions) in enumerate(rules):
-                # assume only one variable shared across premises/conclusions
-                var_entities = None
-                var_name = None
-                for pred, ent, val in premises:
-                    if ent.startswith('$'):
-                        var_name = ent
-                        candidates = {e for p,e,v in facts if p==pred and v==val}
-                        var_entities = candidates if var_entities is None else var_entities & candidates
-                    else:
-                        if (pred, ent, val) not in facts:
-                            var_entities = set()
-                            break
-                if var_entities is None:
-                    var_entities = {None}
-                for entity in var_entities:
-                    rule_tag = 'Use' if applied[idx]==0 else 'Reuse'
-                    reasoning.append(f"{rule_tag} rule{idx+1}: {self.Rules[idx]}")
-                    if var_name:
-                        reasoning.append(f"Bind {var_name} to '{entity}'")
-                    for pred, ent, val in premises:
-                        e = entity if ent.startswith('$') else ent
-                        log_fact = f"{pred}('{e}', {val})"
-                        reasoning.append(
-                            f"Obtain an already known or implied fact: {log_fact}"
-                        )
-                    for pred, ent, val in conclusions:
-                        e = entity if ent.startswith('$') else ent
-                        fact = (pred, e, val)
-                        log_fact = f"{pred}('{e}', {val})"
-                        if fact not in facts:
-                            facts.add(fact)
-                            new_facts.add(fact)
-                            reasoning.append(f"Obtain a new implied fact: {log_fact}")
-                            changed = True
-                        else:
-                            reasoning.append(
-                                f"Obtain an already known or implied fact: {log_fact}"
-                            )
-                    if var_name:
-                        reasoning.append(f"Unbind {var_name}")
-                    reasoning.append(f"Finish implied with rule{idx+1}")
-                    applied[idx] += 1
-
-        reasoning.append("Finally, we obtain following implied facts:")
-        for pred, ent, val in sorted(new_facts):
-            reasoning.append(f"{pred}('{ent}', {val})")
-        reasoning.append("Finish reasoning")
-
-        predicate, subject, expected = self.parse_query(self.Query[0])
-        result = None
-        if (predicate, subject, True) in facts:
-            result = True
-        elif (predicate, subject, False) in facts:
-            result = False
-
-        answer = self.answer_map[self.dataset_name](result, expected)
-        self.reasoning_log = "\n".join(reasoning)
-        return answer, ""
-
 
 if __name__ == "__main__":
     # test pyke solver
@@ -518,19 +405,16 @@ Green(Harry, False) ::: Harry is not green."""
 
     tests = [logic_program7]
     
-    reasoning_results = []
     for test in tests:
         pyke_program = Pyke_Program(test, 'ProofWriter')
         print(pyke_program.flag)
+        # print(pyke_program.Rules)
+        # print(pyke_program.Facts)
+        # print(pyke_program.Query)
+        # print(pyke_program.Predicates)
 
-        result, error_message = pyke_program.execute_program_with_reasoning()
+        result, error_message = pyke_program.execute_program()
         print(result, error_message)
-        print(pyke_program.reasoning_log)
-        reasoning_results.append(pyke_program.reasoning_log)
-
-    with open(os.path.join('sample_data', 'reasonprocess.json'), 'w') as f:
-        import json
-        json.dump(reasoning_results, f, ensure_ascii=False, indent=2)
 
     complied_krb_dir = './compiled_krb'
     if os.path.exists(complied_krb_dir):
