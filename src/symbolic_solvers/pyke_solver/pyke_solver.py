@@ -1,6 +1,7 @@
 import os
 from pyke import knowledge_engine
 import re
+from symbolic_solvers.pyke_solver.pyke_trace import patch_pyke, unpatch_pyke, tracer
 
 class Pyke_Program:
     """
@@ -57,15 +58,17 @@ class Pyke_Program:
         """
         keywords = ['Query:', 'Rules:', 'Facts:', 'Predicates:']
         program_str = self.logic_program
-        
-        # 逐个解析各个部分
+
+        # 逐个解析各个部分，同时保留带注释的原始内容用于展示
         for keyword in keywords:
             try:
                 program_str, segment_list = self._parse_segment(program_str, keyword)
-                # 将解析结果设置为类属性（去掉冒号）
-                setattr(self, keyword[:-1], segment_list)
+                cleaned = [line.split(':::')[0].strip() for line in segment_list]
+                setattr(self, keyword[:-1], cleaned)
+                setattr(self, keyword[:-1] + '_full', segment_list)
             except:
                 setattr(self, keyword[:-1], None)
+                setattr(self, keyword[:-1] + '_full', None)
 
         return self.validate_program()
 
@@ -82,10 +85,6 @@ class Pyke_Program:
         """
         remain_program_str, segment = program_str.split(key_phrase)
         segment_list = segment.strip().split('\n')
-        
-        # 清理每行，移除注释部分（:::后的内容）
-        for i in range(len(segment_list)):
-            segment_list[i] = segment_list[i].split(':::')[0].strip()
         return remain_program_str, segment_list
 
     def validate_program(self):
@@ -309,6 +308,39 @@ class Pyke_Program:
         else:
             return 'B'  # 错误
 
+    # ------------------------------------------------------------------
+    # Functions for revealing solver reasoning process using Pyke tracing
+
+    def execute_with_reasoning(self):
+        rule_map = {f"rule{i+1}": r.split(':::')[0].strip() for i, r in enumerate(self.Rules_full)}
+        patch_pyke(rule_map)
+        answer, msg = self.execute_program()
+        reasoning = tracer.events
+        if tracer.new_facts:
+            reasoning.append("All newly implied Facts: " + ', '.join(sorted(tracer.new_facts)))
+        else:
+            reasoning.append("All newly implied Facts: None")
+        self.reasoning_process = reasoning
+        unpatch_pyke()
+        return answer, msg, self.build_reasoning_string(reasoning)
+
+    def build_reasoning_string(self, reasoning):
+        lines = []
+        lines.append("We first define following predicates and corresponding natural language explanations:")
+        for p in self.Predicates_full:
+            lines.append(f"  {p}")
+        lines.append("We have following known facts from the context:")
+        for f in self.Facts_full:
+            lines.append(f"  {f}")
+        lines.append("We have following known rules from the context:")
+        for i, r in enumerate(self.Rules_full):
+            rule_txt = r.split(':::')[0].strip()
+            lines.append(f"  rule{i+1}: {rule_txt}")
+        lines.append("Now begin reasoning to obtain all implied facts:")
+        lines.extend(reasoning)
+        lines.append("Finish reasoning")
+        return '\n'.join(lines)
+
 
 if __name__ == "__main__":
     # test pyke solver
@@ -403,16 +435,13 @@ Green(Harry, False) ::: Harry is not green."""
 
     tests = [logic_program7]
     
+    import json
     for test in tests:
         pyke_program = Pyke_Program(test, 'ProofWriter')
-        print(pyke_program.flag)
-        # print(pyke_program.Rules)
-        # print(pyke_program.Facts)
-        # print(pyke_program.Query)
-        # print(pyke_program.Predicates)
-
-        result, error_message = pyke_program.execute_program()
-        print(result, error_message)
+        result, _, reasoning = pyke_program.execute_with_reasoning()
+        print(reasoning)
+        with open('sample_data/reasonprocess.json', 'w') as f:
+            json.dump({"Reasoning_Process": reasoning}, f, indent=2)
 
     complied_krb_dir = './compiled_krb'
     if os.path.exists(complied_krb_dir):
