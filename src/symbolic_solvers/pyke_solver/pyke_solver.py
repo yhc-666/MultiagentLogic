@@ -4,14 +4,12 @@ import re
 
 class Pyke_Program:
     """
-    Pyke程序类：用于解析逻辑程序并使用Pyke知识推理引擎进行推理
-    
-    该类主要功能：
+    Main Functions:
     1. 解析包含谓词、事实、规则和查询的逻辑程序
     2. 将逻辑程序转换为Pyke引擎可理解的格式
     3. 执行推理并返回答案
     
-    支持的数据集：ProntoQA、ProofWriter
+    Supported datasets: ProntoQA, ProofWriter
     """
     
     def __init__(self, logic_program: str, dataset_name='ProntoQA') -> None:
