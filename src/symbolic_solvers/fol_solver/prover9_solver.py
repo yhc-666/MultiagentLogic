@@ -205,4 +205,4 @@ if __name__ == "__main__":
     
     prover9_program = FOL_Prover9_Program(logic_program_1) # logic_program_2
     answer, error_message = prover9_program.execute_program()
-    print(answer)
+    print(answer, error_message)

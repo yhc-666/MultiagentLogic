@@ -13,11 +13,11 @@
     "flag_LP": "success",
     "LP_predicted_answer": "A",
     "flag_FOL": "execution error",
-    "FOL_predicted_answer": "B",
+    "FOL_predicted_answer": "A",
     "flag_CSP": "success",
     "CSP_predicted_answer": "D",
     "flag_SAT": "parsing error",
-    "SAT_predicted_answer": "B"
+    "SAT_predicted_answer": "E"
   },
   {
     "id": "002",
@@ -37,6 +37,6 @@
     "flag_CSP": "success",
     "CSP_predicted_answer": "D",
     "flag_SAT": "parsing error",
-    "SAT_predicted_answer": "A"
+    "SAT_predicted_answer": "E"
   }
 ]
