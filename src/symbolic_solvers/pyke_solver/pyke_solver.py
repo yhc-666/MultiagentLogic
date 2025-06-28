@@ -174,7 +174,7 @@ class Pyke_Program:
         conclusion_list = [c.strip() for c in conclusion]
 
         # 创建Pyke规则格式
-        pyke_rule = f'''fact{f_index}\n\tforeach'''
+        pyke_rule = f'''rule{f_index}\n\tforeach'''
         # 添加前提条件
         for p in premise_list:
             pyke_rule += f'''\n\t\tfacts.{p}'''
