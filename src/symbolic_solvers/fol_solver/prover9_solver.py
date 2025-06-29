@@ -3,7 +3,8 @@ import re
 import sys
 from nltk.inference.prover9 import *
 from nltk.sem.logic import NegatedExpression
-import subprocess, shutil 
+import subprocess, shutil
+import tempfile, textwrap, itertools as it
 
 # 添加当前项目根目录到路径，支持绝对导入
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -17,6 +18,86 @@ from src.symbolic_solvers.fol_solver.Formula import FOL_Formula
 PROVER9_PATH = os.path.join(os.path.dirname(__file__), '..', 'Prover9', 'bin')
 os.environ['PROVER9'] = PROVER9_PATH # Linux version
 # os.environ['PROVER9'] = '/opt/homebrew/bin'  # macOS version installed via Homebrew
+
+
+# --- helper utilities for raw prover9 interaction ---
+def _build_p9_input(assumptions: list[str], goal: str, max_seconds: int = 10) -> str:
+    """Build a prover9 input string using NLTK's conversion utilities."""
+    from nltk.inference.prover9 import Expression, convert_to_prover9
+
+    ass_exprs = [Expression.fromstring(a) for a in assumptions]
+    goal_expr = Expression.fromstring(goal)
+    ass_strs = convert_to_prover9(ass_exprs)
+    goal_str = convert_to_prover9(goal_expr)
+
+    ass_block = "\n".join(a + "." for a in ass_strs)
+    return textwrap.dedent(
+        f"""
+        assign(max_seconds,{max_seconds}).
+        clear(auto_denials).
+
+        formulas(assumptions).
+        {ass_block}
+        end_of_list.
+
+        formulas(goals).
+        {goal_str}.
+        end_of_list.
+    """
+    )
+
+
+def _run_prover9_raw(p9_input: str, timeout: int = 12) -> str:
+    with tempfile.NamedTemporaryFile(mode="w+", delete=False) as tf:
+        tf.write(p9_input)
+        tf.flush()
+        cmd = [os.path.join(PROVER9_PATH, "prover9"), "-f", tf.name]
+        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+    os.unlink(tf.name)
+    return proc.stdout
+
+
+_LINE_PAT = re.compile(r"^(Derived:|kept:|given\s+#\d+|-\w|\w).*?\[.*\]")
+
+
+def _clean_prefix(line: str) -> str:
+    """Strip technical prefixes so duplicates are detected."""
+    line = re.sub(r"^(Derived:|kept:|given\s+#\d+)\s*", "", line.strip())
+    line = re.sub(r"^\d+\s+", "", line)
+    return line
+
+
+def _summarise_log(log: str, max_lines: int | None = None) -> str:
+    seen, text_seen, selected = set(), set(), []
+    for ln in log.splitlines():
+        if ln.startswith(("Predicate symbol precedence",
+                          "Function symbol precedence",
+                          "given #")):
+            continue
+        if _LINE_PAT.match(ln):
+            raw_output = re.sub(r"^\d+\s+", "", ln.strip())
+            if raw_output.startswith("kept:"):
+                raw_output = re.sub(r"^kept:\s*\d+\s*", "kept: ", raw_output)
+            dedup_key = " ".join(_clean_prefix(raw_output).split())
+            text_key = _clean_prefix(raw_output).split("[", 1)[0].strip()
+            if raw_output.startswith("kept:") and text_key in text_seen:
+                continue
+            if dedup_key not in seen:
+                selected.append(raw_output)
+                seen.add(dedup_key)
+                text_seen.add(text_key)
+    if max_lines:
+        selected = selected[:max_lines]
+    out = []
+    for idx, ln in enumerate(selected, 1):
+        clause, label = ln.rsplit("[", 1)
+        clause_part = re.sub(r"^\d+\s+", "", clause)
+        out.append(f"{idx} {clause_part.strip()} [{label}")
+    reason = "-- 搜索终止，未产生矛盾 --" if "sos_empty" in log else \
+             "-- 超时终止，未产生矛盾 --" if "max_seconds" in log else \
+             "-- 搜索终止，未产生矛盾 --"
+    return "\n".join(out) + f"\n{reason}"
+
 
 
 
@@ -91,9 +172,19 @@ class FOL_Prover9_Program:
                     proof_trace = 'prove negation of original conclusion:\n' + proof_core
                     return 'False', '', proof_trace
                 else:
-                    # 两次证明都失败，结论未知
-                    proof_trace += 'prove negation of original conclusion:\n' + prover_neg.proof(simplify=False) + '\n'
-                    proof_trace += 'prove original conclusion to be unknown'
+                    # 两次证明都失败，结论未知 → 调命令行版抓完整日志
+                    orig_in  = _build_p9_input(self.prover9_premises, self.prover9_conclusion)
+                    orig_log = _run_prover9_raw(orig_in, timeout=timeout+2)
+                    orig_tr  = _summarise_log(orig_log)
+
+                    neg_goal = f"-({self.prover9_conclusion})"
+                    neg_in   = _build_p9_input(self.prover9_premises, neg_goal)
+                    neg_log  = _run_prover9_raw(neg_in, timeout=timeout+2)
+                    neg_tr   = _summarise_log(neg_log)
+
+                    proof_trace = (f"trying to prove original conclusion:\n{orig_tr}\n\n"
+                                   f"trying to prove negation of original conclusion:\n{neg_tr}\n\n"
+                                   f"So: Unknown")
                     return 'Unknown', '', proof_trace
         except Exception as e:
             return None, str(e), '' 
