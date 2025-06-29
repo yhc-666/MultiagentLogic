@@ -20,7 +20,7 @@ os.environ['PROVER9'] = PROVER9_PATH # Linux version
 # os.environ['PROVER9'] = '/opt/homebrew/bin'  # macOS version installed via Homebrew
 
 
-# --- helper utilities for raw prover9 interaction ---
+# --- helper utilities for raw prover9 interaction starts (for result with unkown)---
 def _build_p9_input(assumptions: list[str], goal: str, max_seconds: int = 10) -> str:
     """Build a prover9 input string using NLTK's conversion utilities."""
     from nltk.inference.prover9 import Expression, convert_to_prover9
@@ -93,12 +93,12 @@ def _summarise_log(log: str, max_lines: int | None = None) -> str:
         clause, label = ln.rsplit("[", 1)
         clause_part = re.sub(r"^\d+\s+", "", clause)
         out.append(f"{idx} {clause_part.strip()} [{label}")
-    reason = "-- 搜索终止，未产生矛盾 --" if "sos_empty" in log else \
-             "-- 超时终止，未产生矛盾 --" if "max_seconds" in log else \
-             "-- 搜索终止，未产生矛盾 --"
+    reason = "-- Search terminated, no contradiction found --" if "sos_empty" in log else \
+             "-- Timeout terminated, no contradiction found --" if "max_seconds" in log else \
+             "-- Search terminated, no contradiction found --"
     return "\n".join(out) + f"\n{reason}"
 
-
+# --- helper utilities for raw prover9 interaction ends ---
 
 
 
@@ -294,7 +294,7 @@ if __name__ == "__main__":
     """
 
     # ground-truth: False
-    logic_program = """Premises:
+    logic_program_u = """Premises:
     MusicPiece(symphonyNo9) ::: Symphony No. 9 is a music piece.
     ∀x ∃z (¬Composer(x) ∨ (Write(x,z) ∧ MusicPiece(z))) ::: Composers write music pieces.
     Write(beethoven, symphonyNo9) ::: Beethoven wrote Symphony No. 9.
@@ -317,7 +317,7 @@ if __name__ == "__main__":
     Conclusion:
     Top10(legendOfZelda) ::: The Legend of Zelda is in the Top 10 list."""
 
-    logic_program_u = """Premises:
+    logic_program = """Premises:
     ∀x (Listed(x) → ¬NegativeReviews(x)) ::: If the restaurant is listed in Yelp's recommendations, then the restaurant does not receive many negative reviews.
     ∀x (GreaterThanNine(x) → Listed(x)) ::: All restaurants with a rating greater than 9 are listed in Yelp's recommendations.
     ∃x (¬TakeOut(x) ∧ NegativeReviews(x)) ::: Some restaurants that do not provide take-out service receive many negative reviews.
