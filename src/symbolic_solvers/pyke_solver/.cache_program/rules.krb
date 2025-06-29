@@ -1,52 +1,57 @@
 rule1
 	foreach
-		facts.Quiet($x, True)
-		facts.Cold($x, True)
+		facts.Young($x, True)
 	assert
-		facts.Smart($x, True)
+		facts.Furry($x, True)
 
 rule2
 	foreach
-		facts.Red($x, True)
-		facts.Cold($x, True)
+		facts.Nice($x, True)
+		facts.Furry($x, True)
 	assert
-		facts.Round($x, True)
+		facts.Green($x, True)
 
 rule3
 	foreach
-		facts.Kind($x, True)
-		facts.Rough($x, True)
+		facts.Green($x, True)
 	assert
-		facts.Red($x, True)
+		facts.Nice($x, True)
 
 rule4
 	foreach
-		facts.Quiet($x, True)
+		facts.Nice($x, True)
+		facts.Green($x, True)
 	assert
-		facts.Rough($x, True)
+		facts.Big($x, True)
 
 rule5
 	foreach
-		facts.Cold($x, True)
-		facts.Smart($x, True)
+		facts.Green($x, True)
 	assert
-		facts.Red($x, True)
+		facts.Smart($x, True)
 
 rule6
 	foreach
-		facts.Rough($x, True)
+		facts.Big($x, True)
+		facts.Young($x, True)
 	assert
-		facts.Cold($x, True)
+		facts.Round($x, True)
 
 rule7
 	foreach
-		facts.Red($x, True)
+		facts.Green($x, True)
 	assert
-		facts.Rough($x, True)
+		facts.Big($x, True)
 
 rule8
 	foreach
-		facts.Smart(Dave, True)
-		facts.Kind(Dave, True)
+		facts.Young(Harry, True)
 	assert
-		facts.Quiet(Dave, True)
+		facts.Furry(Harry, True)
+
+rule9
+	foreach
+		facts.Furry($x, True)
+		facts.Smart($x, True)
+	assert
+		facts.Nice($x, True)

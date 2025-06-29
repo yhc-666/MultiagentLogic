@@ -20,43 +20,12 @@ os.environ['PROVER9'] = PROVER9_PATH # Linux version
 
 
 
-def _prooftrans_safe(raw_proof: str, fmt: str = 'text') -> str:
-    """
-    Deliver the raw proof text of prover9 to prooftrans.
-    - fmt 可取 'text' | 'xml' | 'ivy' | 'dot'
-    - If there is no real PROOF block or prooftrans fails, return '' instead of throwing an exception.
-    """
-    markers = ("============================== PROOF",
-               "% Proof from Prover9")
-    if not any(m in raw_proof for m in markers):
-        return ''
-
-    # 找 prooftrans 可执行
-    pt_bin = shutil.which('prooftrans') or \
-             os.path.join(os.environ['PROVER9'].rstrip('/'), 'prooftrans')
-    if not os.path.exists(pt_bin):
-        return ''
-
-    cmd = [pt_bin, 'expand', 'renumber']
-    if fmt in ('xml', 'ivy', 'dot'):
-        cmd.append(fmt)
-
-    try:
-        run = subprocess.run(
-            cmd, input=raw_proof, text=True,
-            capture_output=True, check=True
-        )
-        return run.stdout
-    except subprocess.CalledProcessError:
-        return ''
-
 
 class FOL_Prover9_Program:
     def __init__(self, logic_program:str, dataset_name = 'FOLIO') -> None:
         self.logic_program = logic_program
         self.flag = self.parse_logic_program()
         self.dataset_name = dataset_name
-
 
     def parse_logic_program(self):
         try:        
@@ -88,46 +57,48 @@ class FOL_Prover9_Program:
         except:
             return False
 
-    def execute_program(self, need_trace: bool = True, trace_fmt: str = 'text'):
-        """
-        trace_fmt: 'text' | 'xml' | 'ivy' | 'dot'
-        Return (answer, error_message, proof_trace)
-          - answer: 'True' / 'False' / 'Unknown' / None
-          - error_message: '' or exception message
-          - proof_trace: proof text after prooftrans (or the selected format); if not exists, return ''
-        """
+    def execute_program(self):
         try:
             goal = Expression.fromstring(self.prover9_conclusion)
             assumptions = [Expression.fromstring(a) for a in self.prover9_premises]
             timeout = 10
+            #prover = Prover9()
+            #result = prover.prove(goal, assumptions)
+            
+            prover = Prover9Command(goal, assumptions, timeout=timeout)
+            result = prover.prove()
+            # print(prover.proof())
 
-            # —— 第一次尝试：证明结论 ——
-            prover = Prover9Command(
-                goal, assumptions, timeout=timeout
-            )
-            proved = prover.prove()
-            raw_proof = prover.proof()
-            trace = _prooftrans_safe(raw_proof, trace_fmt) if need_trace else ''
+            # 构造推导路径信息
+            proof_trace = ''
 
-            if proved:
-                return 'True', '', trace
-
-            # —— 第二次尝试：证明否定结论 ——
-            negated_goal = NegatedExpression(goal)
-            prover_neg = Prover9Command(
-                negated_goal, assumptions, timeout=timeout
-            )
-            neg_proved = prover_neg.prove()
-            raw_proof_neg = prover_neg.proof()
-            trace_neg = _prooftrans_safe(raw_proof_neg, trace_fmt) if need_trace else ''
-
-            if neg_proved:
-                return 'False', '', trace_neg
+            if result:
+                # 证明成功：记录原结论的推导路径
+                proof_core = self._extract_proof_steps_ture_false(prover.proof(simplify=True))
+                proof_trace = 'prove original conclusion:\n' + proof_core
+                return 'True', '', proof_trace
             else:
-                return 'Unknown', '', ''
+                # 证明失败，尝试证明结论的否定。
+                proof_core_original = self._extract_proof_steps_ture_false(prover.proof(simplify=False))
+                proof_trace += 'prove original conclusion:\n' + proof_core_original + '\n'
 
+                negated_goal = NegatedExpression(goal)
+                prover_neg = Prover9Command(negated_goal, assumptions, timeout=timeout)
+                negation_result = prover_neg.prove()
+
+                if negation_result:
+                    # 证明否定成功 => 原结论为 False，只输出成功证明路径
+                    proof_core = self._extract_proof_steps_ture_false(prover_neg.proof(simplify=True))
+                    proof_trace = 'prove negation of original conclusion:\n' + proof_core
+                    return 'False', '', proof_trace
+                else:
+                    # 两次证明都失败，结论未知。依然仅保留核心推理步骤。
+                    proof_core_neg = self._extract_proof_steps_ture_false(prover_neg.proof(simplify=False))
+                    proof_trace += 'prove negation of original conclusion:\n' + proof_core_neg + '\n'
+                    proof_trace += 'prove original conclusion to be unknown'
+                    return 'Unknown', '', proof_trace
         except Exception as e:
-            return None, str(e), ''
+            return None, str(e), '' 
         
     def answer_mapping(self, answer):
         if answer == 'True':
@@ -139,11 +110,28 @@ class FOL_Prover9_Program:
         else:
             raise Exception("Answer not recognized")
         
+    @staticmethod
+    def _extract_proof_steps_ture_false(proof_str: str) -> str:
+        """Extract only the numbered step lines from a Prover9 proof output.
+
+        Prover9 proof outputs often contain headers, footers, and comments in
+        addition to the essential step lines that begin with an integer index.
+        This helper keeps only lines that start with digits (optionally
+        preceded by whitespace), which correspond to the step annotations we
+        are interested in displaying.
+        """
+        step_lines = []
+        for line in proof_str.splitlines():
+            # 保留以数字、Derived:, kept:, given # 开头的行
+            if re.match(r"^\s*(\d+|Derived:|kept:|given)", line):
+                step_lines.append(line)
+        return "\n".join(step_lines)
+
 if __name__ == "__main__":
     ## ¬∀x (Movie(x) → HappyEnding(x))
     ## ∃x (Movie(x) → ¬HappyEnding(x))
     # ground-truth: True
-    logic_program_1 = """Premises:
+    logic_program_t = """Premises:
     ¬∀x (Movie(x) → HappyEnding(x)) ::: Not all movie has a happy ending.
     Movie(titanic) ::: Titanic is a movie.
     ¬HappyEnding(titanic) ::: Titanic does not have a happy ending.
@@ -154,7 +142,7 @@ if __name__ == "__main__":
     """
 
     # ground-truth: True
-    logic_program_2 = """Premises:
+    logic_program = """Premises:
     ∀x (Drinks(x) → Dependent(x)) ::: All people who regularly drink coffee are dependent on caffeine.
     ∀x (Drinks(x) ⊕ Jokes(x)) ::: People either regularly drink coffee or joke about being addicted to caffeine.
     ∀x (Jokes(x) → ¬Unaware(x)) ::: No one who jokes about being addicted to caffeine is unaware that caffeine is a drug. 
@@ -165,7 +153,7 @@ if __name__ == "__main__":
     """
 
     # ground-truth: True
-    logic_program_3 = """Premises:
+    logic_program = """Premises:
     ∀x (Drinks(x) → Dependent(x)) ::: All people who regularly drink coffee are dependent on caffeine.
     ∀x (Drinks(x) ⊕ Jokes(x)) ::: People either regularly drink coffee or joke about being addicted to caffeine.
     ∀x (Jokes(x) → ¬Unaware(x)) ::: No one who jokes about being addicted to caffeine is unaware that caffeine is a drug. 
@@ -176,7 +164,7 @@ if __name__ == "__main__":
     """
 
     # ground-truth: Unknown
-    logic_program_4 = """Premises:
+    logic_program = """Premises:
     Czech(miroslav) ∧ ChoralConductor(miroslav) ∧ Specialize(miroslav, renaissance) ∧ Specialize(miroslav, baroque) ::: Miroslav Venhoda was a Czech choral conductor who specialized in the performance of Renaissance and Baroque music.
     ∀x (ChoralConductor(x) → Musician(x)) ::: Any choral conductor is a musician.
     ∃x (Musician(x) ∧ Love(x, music)) ::: Some musicians love music.
@@ -186,7 +174,7 @@ if __name__ == "__main__":
     """
 
     # ground-truth: True
-    logic_program_5 = """Premises:
+    logic_program = """Premises:
     Czech(miroslav) ∧ ChoralConductor(miroslav) ∧ Specialize(miroslav, renaissance) ∧ Specialize(miroslav, baroque) ::: Miroslav Venhoda was a Czech choral conductor who specialized in the performance of Renaissance and Baroque music.
     ∀x (ChoralConductor(x) → Musician(x)) ::: Any choral conductor is a musician.
     ∃x (Musician(x) ∧ Love(x, music)) ::: Some musicians love music.
@@ -196,7 +184,7 @@ if __name__ == "__main__":
     """
 
     # ground-truth: False
-    logic_program_6 = """Premises:
+    logic_program_f = """Premises:
     Czech(miroslav) ∧ ChoralConductor(miroslav) ∧ Specialize(miroslav, renaissance) ∧ Specialize(miroslav, baroque) ::: Miroslav Venhoda was a Czech choral conductor who specialized in the performance of Renaissance and Baroque music.
     ∀x (ChoralConductor(x) → Musician(x)) ::: Any choral conductor is a musician.
     ∃x (Musician(x) ∧ Love(x, music)) ::: Some musicians love music.
@@ -207,7 +195,7 @@ if __name__ == "__main__":
 
     # ground-truth: Unknown
     # Premises:\nall x.(perform_in_school_talent_shows_often(x) -> (attend_school_events(x) & very_engaged_with_school_events(x))) ::: If people perform in school talent shows often, then they attend and are very engaged with school events.\nall x.(perform_in_school_talent_shows_often(x) ^ (inactive_member(x) & disinterested_member(x))) ::: People either perform in school talent shows often or are inactive and disinterested members of their community.\nall x.(chaperone_high_school_dances(x) -> not student_attend_school(x)) ::: If people chaperone high school dances, then they are not students who attend the school.\nall x.((inactive_member(x) & disinterested_member(x)) -> chaperone_high_school_dances(x)) ::: All people who are inactive and disinterested members of their community chaperone high school dances.\nall x.((young_child(x) | teenager(x)) & wish_to_further_academic_careers(x) & wish_to_further_educational_opportunities(x) -> student_attend_school(x)) ::: All young children and teenagers who wish to further their academic careers and educational opportunities are students who attend the school.\n(attend_school_events(bonnie) & very_engaged_with_school_events(bonnie) & student_attend_school(bonnie)) ^ (not attend_school_events(bonnie) & not very_engaged_with_school_events(bonnie) & not student_attend_school(bonnie)) ::: Bonnie either both attends and is very engaged with school events and is a student who attends the school, or she neither attends and is very engaged with school events nor is a student who attends the school.\nConclusion:\nperform_in_school_talent_shows_often(bonnie) ::: Bonnie performs in school talent shows often."
-    logic_program_7 = """Premises:
+    logic_program = """Premises:
     ∀x (TalentShows(x) → Engaged(x)) ::: If people perform in school talent shows often, then they attend and are very engaged with school events.
     ∀x (TalentShows(x) ∨ Inactive(x)) ::: People either perform in school talent shows often or are inactive and disinterested members of their community.
     ∀x (Chaperone(x) → ¬Students(x)) ::: If people chaperone high school dances, then they are not students who attend the school.
@@ -218,7 +206,7 @@ if __name__ == "__main__":
     """
 
     # ground-truth: False
-    logic_program_8 = """Premises:
+    logic_program = """Premises:
     MusicPiece(symphonyNo9) ::: Symphony No. 9 is a music piece.
     ∀x ∃z (¬Composer(x) ∨ (Write(x,z) ∧ MusicPiece(z))) ::: Composers write music pieces.
     Write(beethoven, symphonyNo9) ::: Beethoven wrote Symphony No. 9.
@@ -228,7 +216,7 @@ if __name__ == "__main__":
     ¬Conductor(beethoven) ::: Beethoven is not a conductor."""
 
     # ground-truth: True
-    logic_program_9 = """Predicates:
+    logic_program = """Predicates:
     JapaneseCompany(x) ::: x is a Japanese game company.
     Create(x, y) ::: x created the game y.
     Top10(x) ::: x is in the Top 10 list.
@@ -241,36 +229,16 @@ if __name__ == "__main__":
     Conclusion:
     Top10(legendOfZelda) ::: The Legend of Zelda is in the Top 10 list."""
 
-    logic_program_10 = """Premises:
-    ∀x (Listed(x) → ¬NegativeReviews(x)) ::: If the restaurant is listed in Yelp’s recommendations, then the restaurant does not receive many negative reviews.
-    ∀x (GreaterThanNine(x) → Listed(x)) ::: All restaurants with a rating greater than 9 are listed in Yelp’s recommendations.
+    logic_program_u = """Premises:
+    ∀x (Listed(x) → ¬NegativeReviews(x)) ::: If the restaurant is listed in Yelp's recommendations, then the restaurant does not receive many negative reviews.
+    ∀x (GreaterThanNine(x) → Listed(x)) ::: All restaurants with a rating greater than 9 are listed in Yelp's recommendations.
     ∃x (¬TakeOut(x) ∧ NegativeReviews(x)) ::: Some restaurants that do not provide take-out service receive many negative reviews.
     ∀x (Popular(x) → GreaterThanNine(x)) ::: All restaurants that are popular among local residents have ratings greater than 9.
     GreaterThanNine(subway) ∨ Popular(subway) ::: Subway has a rating greater than 9 or is popular among local residents.
     Conclusion:
     TakeOut(subway) ∧ ¬NegativeReviews(subway) ::: Subway provides take-out service and does not receive many negative reviews."""
     
-    # logic_programs = [
-    #     logic_program_1, logic_program_2, logic_program_3, logic_program_4, logic_program_5,
-    #     logic_program_6, logic_program_7, logic_program_8, logic_program_9, logic_program_10
-    # ]
-    # ground-truth: T, T, T, U, T, F, U, F, T, T
-
-    logic_programs = [logic_program_10]
-    
-    # run all test cases
-    for i, lp in enumerate(logic_programs, 1):
-        print(f"\n=== running test case {i} ===")
-        p9 = FOL_Prover9_Program(lp)
-        if not p9.flag:
-            print("logic program parsing failed")
-            continue
-
-        ans, err, trace = p9.execute_program(need_trace=True, trace_fmt='text')  # 'xml' 等也可
-        print("answer:", ans)
-        print("error message:", err or "(none)")
-        print("---- prooftrans trace ----")
-        print(trace or "(no proof produced)")
-
-
-
+    prover9_program = FOL_Prover9_Program(logic_program_f)
+    result, error_message, reasoning = prover9_program.execute_program()
+    print('result:', result)
+    print('reasoning:', reasoning)

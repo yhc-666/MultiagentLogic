@@ -1,5 +1,45 @@
 # MultiagentLogic
+This project is the implementatiom of logic sover engine for MultiagentLogic in which reasoning path is retrievable.
+Input: Logic dataset in SL format
+Output: Solutions + reasoning path
 
+## Project Structure
+
+```text
+├── src/                       
+│   ├── symbolic_solvers/      # Logic solvers (Prover9, Z3, PyKE, etc.)
+│   │   ├── fol_solver/
+│   │   ├── z3_solver/
+│   │   ├── pyke_solver/
+│   │   └── csp_solver/
+│   ├── logic_inference.py     # Entry point for reasoning engine
+│   └── ...
+├── scripts/
+│   ├── run_inference.sh       # Convenience launcher
+│   └── demo.ipynb             # Jupyter note book for quick demo
+├── sample_data/               # Example inputs / output
+├── requirements.txt           
+└── README.md
+```
+
+## Start
+
+1. Install dependencies (Python 3.12 recommended):
+```bash
+pip install -r requirements.txt
+```
+
+2. Configure the Prover9 executable path as described below.
+
+3. Run inference:
+
+```bash
+bash scripts/run_inference.sh
+# or
+python src/logic_inference.py
+```
+
+4. Can use `scripts/demo.ipynb` for quick demo
 
 
 ### ！Important: PROVER9 Path Configuration
@@ -21,6 +61,7 @@ macOS users should install Prover9 via Homebrew and use this configuration. To i
 ```bash
 brew install prover9
 ```
+How prooftrans does not support macOS so not able to retrieve reasoning path for Prover9 on macOS.
 
 **Windows Users:**
-Sorry不太熟悉windowsOS, same 安装PROVER9并配置路径即可
+Sorry不太熟悉windowsOS, same 安装PROVER9并配置路径即可, but may also have problem with prooftrans as macOS

@@ -1,0 +1,154 @@
+We first define following predicates and corresponding natural language explanations:
+  Furry($x, bool) ::: Is x furry?
+  Nice($x, bool) ::: Is x nice?
+  Smart($x, bool) ::: Is x smart?
+  Young($x, bool) ::: Is x young?
+  Green($x, bool) ::: Is x green?
+  Big($x, bool) ::: Is x big?
+  Round($x, bool) ::: Is x round?
+We have following known facts from the context:
+  Furry(Anne, True) ::: Anne is furry.
+  Nice(Anne, True) ::: Anne is nice.
+  Smart(Anne, True) ::: Anne is smart.
+  Young(Bob, True) ::: Bob is young.
+  Nice(Erin, True) ::: Erin is nice.
+  Smart(Harry, True) ::: Harry is smart.
+  Young(Harry, True) ::: Harry is young.
+We have following known rules from the context:
+  rule1: Young($x, True) >>> Furry($x, True)
+  rule2: Nice($x, True) && Furry($x, True) >>> Green($x, True)
+  rule3: Green($x, True) >>> Nice($x, True)
+  rule4: Nice($x, True) && Green($x, True) >>> Big($x, True)
+  rule5: Green($x, True) >>> Smart($x, True)
+  rule6: Big($x, True) && Young($x, True) >>> Round($x, True)
+  rule7: Green($x, True) >>> Big($x, True)
+  rule8: Young(Harry, True) >>> Furry(Harry, True)
+  rule9: Furry($x, True) && Smart($x, True) >>> Nice($x, True)
+Now begin reasoning to obtain all implied facts:
+Use rule1: Young($x, True) >>> Furry($x, True)
+Bind $x to 'Bob'
+Obtain an already known or implied fact: Smart('Bob', True)
+Unbind $x
+Bind $x to 'Charlie'
+Unbind $x
+Bind $x to 'Fiona'
+Unbind $x
+Finish implied with rule1
+Use rule2: Nice($x, True) && Furry($x, True) >>> Green($x, True)
+Bind $x to 'Bob'
+Obtain a new implied fact: Round('Bob', True)
+Unbind $x
+Bind $x to 'Charlie'
+Unbind $x
+Finish implied with rule2
+Use rule3: Green($x, True) >>> Nice($x, True)
+Bind $x to 'Charlie'
+Obtain an already known or implied fact: Red('Charlie', True)
+Unbind $x
+Bind $x to 'Dave'
+Unbind $x
+Finish implied with rule3
+Use rule4: Nice($x, True) && Green($x, True) >>> Big($x, True)
+Bind $x to 'Bob'
+Obtain a new implied fact: Rough('Bob', True)
+Reuse rule3: Green($x, True) >>> Nice($x, True)
+Bind $x to 'Bob'
+Finish implied with rule3
+Use rule6: Big($x, True) && Young($x, True) >>> Round($x, True)
+Finish implied with rule6
+Reuse rule3: Green($x, True) >>> Nice($x, True)
+Bind $x to 'Fiona'
+Finish implied with rule3
+Reuse rule6: Big($x, True) && Young($x, True) >>> Round($x, True)
+Finish implied with rule6
+Finish implied with rule4
+Use rule5: Green($x, True) >>> Smart($x, True)
+Bind $x to 'Bob'
+Obtain an already known or implied fact: Red('Bob', True)
+Unbind $x
+Bind $x to 'Dave'
+Obtain a new implied fact: Red('Dave', True)
+Reuse rule2: Nice($x, True) && Furry($x, True) >>> Green($x, True)
+Bind $x to 'Dave'
+Obtain a new implied fact: Round('Dave', True)
+Finish implied with rule2
+Use rule7: Green($x, True) >>> Big($x, True)
+Finish implied with rule7
+Finish implied with rule5
+Reuse rule6: Big($x, True) && Young($x, True) >>> Round($x, True)
+Bind $x to 'Charlie'
+Obtain a new implied fact: Cold('Charlie', True)
+Reuse rule1: Young($x, True) >>> Furry($x, True)
+Bind $x to 'Charlie'
+Obtain a new implied fact: Smart('Charlie', True)
+Reuse rule5: Green($x, True) >>> Smart($x, True)
+Bind $x to 'Charlie'
+Obtain an already known or implied fact: Red('Charlie', True)
+Finish implied with rule5
+Use rule8: Young(Harry, True) >>> Furry(Harry, True)
+Finish implied with rule8
+Finish implied with rule1
+Reuse rule2: Nice($x, True) && Furry($x, True) >>> Green($x, True)
+Bind $x to 'Charlie'
+Obtain a new implied fact: Round('Charlie', True)
+Finish implied with rule2
+Reuse rule5: Green($x, True) >>> Smart($x, True)
+Bind $x to 'Charlie'
+Obtain an already known or implied fact: Red('Charlie', True)
+Finish implied with rule5
+Reuse rule1: Young($x, True) >>> Furry($x, True)
+Bind $x to 'Fiona'
+Obtain a new implied fact: Smart('Fiona', True)
+Reuse rule5: Green($x, True) >>> Smart($x, True)
+Bind $x to 'Fiona'
+Obtain a new implied fact: Red('Fiona', True)
+Reuse rule2: Nice($x, True) && Furry($x, True) >>> Green($x, True)
+Bind $x to 'Fiona'
+Obtain a new implied fact: Round('Fiona', True)
+Finish implied with rule2
+Reuse rule7: Green($x, True) >>> Big($x, True)
+Finish implied with rule7
+Finish implied with rule5
+Reuse rule8: Young(Harry, True) >>> Furry(Harry, True)
+Finish implied with rule8
+Finish implied with rule1
+Reuse rule2: Nice($x, True) && Furry($x, True) >>> Green($x, True)
+Bind $x to 'Fiona'
+Obtain an already known or implied fact: Round('Fiona', True)
+Finish implied with rule2
+Reuse rule5: Green($x, True) >>> Smart($x, True)
+Bind $x to 'Fiona'
+Obtain an already known or implied fact: Red('Fiona', True)
+Finish implied with rule5
+Finish implied with rule6
+Reuse rule7: Green($x, True) >>> Big($x, True)
+Bind $x to 'Bob'
+Obtain an already known or implied fact: Rough('Bob', True)
+Unbind $x
+Bind $x to 'Charlie'
+Obtain an already known or implied fact: Rough('Charlie', True)
+Unbind $x
+Bind $x to 'Dave'
+Obtain a new implied fact: Rough('Dave', True)
+Reuse rule3: Green($x, True) >>> Nice($x, True)
+Bind $x to 'Dave'
+Obtain an already known or implied fact: Red('Dave', True)
+Finish implied with rule3
+Reuse rule6: Big($x, True) && Young($x, True) >>> Round($x, True)
+Bind $x to 'Dave'
+Obtain an already known or implied fact: Cold('Dave', True)
+Finish implied with rule6
+Finish implied with rule7
+Reuse rule8: Young(Harry, True) >>> Furry(Harry, True)
+Obtain a new implied fact: Quiet('Dave', True)
+Reuse rule1: Young($x, True) >>> Furry($x, True)
+Bind $x to 'Dave'
+Obtain an already known or implied fact: Smart('Dave', True)
+Finish implied with rule1
+Reuse rule4: Nice($x, True) && Green($x, True) >>> Big($x, True)
+Bind $x to 'Dave'
+Obtain an already known or implied fact: Rough('Dave', True)
+Finish implied with rule4
+Finish implied with rule8
+All newly implied Facts: Cold('Charlie', True), Quiet('Dave', True), Red('Dave', True), Red('Fiona', True), Rough('Bob', True), Rough('Dave', True), Round('Bob', True), Round('Charlie', True), Round('Dave', True), Round('Fiona', True), Smart('Charlie', True), Smart('Fiona', True)
+Finish reasoning
