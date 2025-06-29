@@ -3,6 +3,7 @@ import re
 import sys
 from nltk.inference.prover9 import *
 from nltk.sem.logic import NegatedExpression
+import subprocess, shutil 
 
 # 添加当前项目根目录到路径，支持绝对导入
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -13,18 +14,49 @@ from src.symbolic_solvers.fol_solver.fol_prover9_parser import Prover9_FOL_Formu
 from src.symbolic_solvers.fol_solver.Formula import FOL_Formula
 
 # set the path to the prover9 executable
-# the prover9 binaries are shipped with this repository under
-# `src/symbolic_solvers/Prover9/bin`.  We resolve the absolute path here to
-# avoid issues with the working directory when invoking the solver.
 PROVER9_PATH = os.path.join(os.path.dirname(__file__), '..', 'Prover9', 'bin')
 #os.environ['PROVER9'] = PROVER9_PATH # Linux version
 os.environ['PROVER9'] = '/opt/homebrew/bin'  # macOS version installed via Homebrew
+
+
+
+def _prooftrans_safe(raw_proof: str, fmt: str = 'text') -> str:
+    """
+    Deliver the raw proof text of prover9 to prooftrans.
+    - fmt 可取 'text' | 'xml' | 'ivy' | 'dot'
+    - If there is no real PROOF block or prooftrans fails, return '' instead of throwing an exception.
+    """
+    markers = ("============================== PROOF",
+               "% Proof from Prover9")
+    if not any(m in raw_proof for m in markers):
+        return ''
+
+    # 找 prooftrans 可执行
+    pt_bin = shutil.which('prooftrans') or \
+             os.path.join(os.environ['PROVER9'].rstrip('/'), 'prooftrans')
+    if not os.path.exists(pt_bin):
+        return ''
+
+    cmd = [pt_bin, 'expand', 'renumber']
+    if fmt in ('xml', 'ivy', 'dot'):
+        cmd.append(fmt)
+
+    try:
+        run = subprocess.run(
+            cmd, input=raw_proof, text=True,
+            capture_output=True, check=True
+        )
+        return run.stdout
+    except subprocess.CalledProcessError:
+        return ''
+
 
 class FOL_Prover9_Program:
     def __init__(self, logic_program:str, dataset_name = 'FOLIO') -> None:
         self.logic_program = logic_program
         self.flag = self.parse_logic_program()
         self.dataset_name = dataset_name
+
 
     def parse_logic_program(self):
         try:        
@@ -56,32 +88,46 @@ class FOL_Prover9_Program:
         except:
             return False
 
-    def execute_program(self):
+    def execute_program(self, need_trace: bool = True, trace_fmt: str = 'text'):
+        """
+        trace_fmt: 'text' | 'xml' | 'ivy' | 'dot'
+        Return (answer, error_message, proof_trace)
+          - answer: 'True' / 'False' / 'Unknown' / None
+          - error_message: '' or exception message
+          - proof_trace: proof text after prooftrans (or the selected format); if not exists, return ''
+        """
         try:
             goal = Expression.fromstring(self.prover9_conclusion)
             assumptions = [Expression.fromstring(a) for a in self.prover9_premises]
             timeout = 10
-            #prover = Prover9()
-            #result = prover.prove(goal, assumptions)
-            
-            prover = Prover9Command(goal, assumptions, timeout=timeout)
-            result = prover.prove()
-            # print(prover.proof())
-            if result:
-                return 'True', ''
+
+            # —— 第一次尝试：证明结论 ——
+            prover = Prover9Command(
+                goal, assumptions, timeout=timeout
+            )
+            proved = prover.prove()
+            raw_proof = prover.proof()
+            trace = _prooftrans_safe(raw_proof, trace_fmt) if need_trace else ''
+
+            if proved:
+                return 'True', '', trace
+
+            # —— 第二次尝试：证明否定结论 ——
+            negated_goal = NegatedExpression(goal)
+            prover_neg = Prover9Command(
+                negated_goal, assumptions, timeout=timeout
+            )
+            neg_proved = prover_neg.prove()
+            raw_proof_neg = prover_neg.proof()
+            trace_neg = _prooftrans_safe(raw_proof_neg, trace_fmt) if need_trace else ''
+
+            if neg_proved:
+                return 'False', '', trace_neg
             else:
-                # If Prover9 fails to prove, we differentiate between False and Unknown
-                # by running Prover9 with the negation of the goal
-                negated_goal = NegatedExpression(goal)
-                # negation_result = prover.prove(negated_goal, assumptions)
-                prover = Prover9Command(negated_goal, assumptions, timeout=timeout)
-                negation_result = prover.prove()
-                if negation_result:
-                    return 'False', ''
-                else:
-                    return 'Unknown', ''
+                return 'Unknown', '', ''
+
         except Exception as e:
-            return None, str(e)
+            return None, str(e), ''
         
     def answer_mapping(self, answer):
         if answer == 'True':
@@ -204,20 +250,27 @@ if __name__ == "__main__":
     Conclusion:
     TakeOut(subway) ∧ ¬NegativeReviews(subway) ::: Subway provides take-out service and does not receive many negative reviews."""
     
-    logic_programs = [
-        logic_program_1, logic_program_2, logic_program_3, logic_program_4, logic_program_5,
-        logic_program_6, logic_program_7, logic_program_8, logic_program_9, logic_program_10
-    ]
+    # logic_programs = [
+    #     logic_program_1, logic_program_2, logic_program_3, logic_program_4, logic_program_5,
+    #     logic_program_6, logic_program_7, logic_program_8, logic_program_9, logic_program_10
+    # ]
     # ground-truth: T, T, T, U, T, F, U, F, T, T
+
+    logic_programs = [logic_program_10]
     
     # run all test cases
-    for i, logic_program in enumerate(logic_programs, 1):
-        print(f"=== running test case {i} ===")
-        prover9_program = FOL_Prover9_Program(logic_program)
-        if prover9_program.flag:  # 检查解析是否成功
-            answer, error_message = prover9_program.execute_program()
-            print(f"result: {answer}")
-            if error_message:
-                print(f"error message: {error_message}")
-        else:
+    for i, lp in enumerate(logic_programs, 1):
+        print(f"\n=== running test case {i} ===")
+        p9 = FOL_Prover9_Program(lp)
+        if not p9.flag:
             print("logic program parsing failed")
+            continue
+
+        ans, err, trace = p9.execute_program(need_trace=False, trace_fmt='text')  # 'xml' 等也可
+        print("answer:", ans)
+        print("error message:", err or "(none)")
+        print("---- prooftrans trace ----")
+        print(trace or "(no proof produced)")
+
+
+
