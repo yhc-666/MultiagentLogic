@@ -69,13 +69,19 @@ def _clean_prefix(line: str) -> str:
 
 def _summarise_log(log: str, max_lines: int | None = None) -> str:
     seen, text_seen, selected = set(), set(), []
+    mapping: dict[int, int] = {}
+    key_to_index: dict[str, int] = {}
     for ln in log.splitlines():
         if ln.startswith(("Predicate symbol precedence",
                           "Function symbol precedence",
                           "given #")):
             continue
         if _LINE_PAT.match(ln):
-            raw_output = re.sub(r"^\d+\s+", "", ln.strip())
+            m = re.match(r"\s*(\d+)\s+(.*)", ln.strip())
+            if m:
+                orig_no, raw_output = int(m.group(1)), m.group(2)
+            else:
+                orig_no, raw_output = None, re.sub(r"^\d+\s+", "", ln.strip())
             if raw_output.startswith("kept:"):
                 raw_output = re.sub(r"^kept:\s*\d+\s*", "kept: ", raw_output)
             dedup_key = " ".join(_clean_prefix(raw_output).split())
@@ -83,16 +89,27 @@ def _summarise_log(log: str, max_lines: int | None = None) -> str:
             if raw_output.startswith("kept:") and text_key in text_seen:
                 continue
             if dedup_key not in seen:
-                selected.append(raw_output)
+                selected.append((orig_no, raw_output))
+                idx = len(selected)
+                if orig_no is not None:
+                    mapping[orig_no] = idx
                 seen.add(dedup_key)
+                key_to_index[dedup_key] = idx
                 text_seen.add(text_key)
+            else:
+                # duplicate line, map its original number to existing index
+                if orig_no is not None and dedup_key in key_to_index:
+                    mapping[orig_no] = key_to_index[dedup_key]
     if max_lines:
         selected = selected[:max_lines]
+        # rebuild mapping for truncated output
+        mapping = {orig: idx + 1 for idx, (orig, _) in enumerate(selected) if orig is not None}
     out = []
-    for idx, ln in enumerate(selected, 1):
+    for idx, (orig_no, ln) in enumerate(selected, 1):
         clause, label = ln.rsplit("[", 1)
         clause_part = re.sub(r"^\d+\s+", "", clause)
-        out.append(f"{idx} {clause_part.strip()} [{label}")
+        label = re.sub(r'(?<=\(|,)\d+(?=\)|,)', lambda m: str(mapping.get(int(m.group(0)), int(m.group(0)))), '[' + label)
+        out.append(f"{idx} {clause_part.strip()} {label}")
     reason = "-- Search terminated, no contradiction found --" if "sos_empty" in log else \
              "-- Timeout terminated, no contradiction found --" if "max_seconds" in log else \
              "-- Search terminated, no contradiction found --"
