@@ -15,8 +15,8 @@ from src.symbolic_solvers.fol_solver.Formula import FOL_Formula
 
 # set the path to the prover9 executable
 PROVER9_PATH = os.path.join(os.path.dirname(__file__), '..', 'Prover9', 'bin')
-#os.environ['PROVER9'] = PROVER9_PATH # Linux version
-os.environ['PROVER9'] = '/opt/homebrew/bin'  # macOS version installed via Homebrew
+os.environ['PROVER9'] = PROVER9_PATH # Linux version
+# os.environ['PROVER9'] = '/opt/homebrew/bin'  # macOS version installed via Homebrew
 
 
 
@@ -266,7 +266,7 @@ if __name__ == "__main__":
             print("logic program parsing failed")
             continue
 
-        ans, err, trace = p9.execute_program(need_trace=False, trace_fmt='text')  # 'xml' 等也可
+        ans, err, trace = p9.execute_program(need_trace=True, trace_fmt='text')  # 'xml' 等也可
         print("answer:", ans)
         print("error message:", err or "(none)")
         print("---- prooftrans trace ----")
