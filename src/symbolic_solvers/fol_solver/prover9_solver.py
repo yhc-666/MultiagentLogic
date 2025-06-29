@@ -78,9 +78,8 @@ class FOL_Prover9_Program:
                 proof_trace = 'prove original conclusion:\n' + proof_core
                 return 'True', '', proof_trace
             else:
-                # 证明失败，尝试证明结论的否定。
-                proof_core_original = self._extract_proof_steps_ture_false(prover.proof(simplify=False))
-                proof_trace += 'prove original conclusion:\n' + proof_core_original + '\n'
+                # 证明失败，尝试证明结论的否定
+                proof_trace += 'prove original conclusion:\n' + prover.proof(simplify=False) + '\n'
 
                 negated_goal = NegatedExpression(goal)
                 prover_neg = Prover9Command(negated_goal, assumptions, timeout=timeout)
@@ -92,9 +91,8 @@ class FOL_Prover9_Program:
                     proof_trace = 'prove negation of original conclusion:\n' + proof_core
                     return 'False', '', proof_trace
                 else:
-                    # 两次证明都失败，结论未知。依然仅保留核心推理步骤。
-                    proof_core_neg = self._extract_proof_steps_ture_false(prover_neg.proof(simplify=False))
-                    proof_trace += 'prove negation of original conclusion:\n' + proof_core_neg + '\n'
+                    # 两次证明都失败，结论未知
+                    proof_trace += 'prove negation of original conclusion:\n' + prover_neg.proof(simplify=False) + '\n'
                     proof_trace += 'prove original conclusion to be unknown'
                     return 'Unknown', '', proof_trace
         except Exception as e:
@@ -122,8 +120,7 @@ class FOL_Prover9_Program:
         """
         step_lines = []
         for line in proof_str.splitlines():
-            # 保留以数字、Derived:, kept:, given # 开头的行
-            if re.match(r"^\s*(\d+|Derived:|kept:|given)", line):
+            if re.match(r"^\s*\d+", line):
                 step_lines.append(line)
         return "\n".join(step_lines)
 
@@ -238,7 +235,7 @@ if __name__ == "__main__":
     Conclusion:
     TakeOut(subway) ∧ ¬NegativeReviews(subway) ::: Subway provides take-out service and does not receive many negative reviews."""
     
-    prover9_program = FOL_Prover9_Program(logic_program_f)
+    prover9_program = FOL_Prover9_Program(logic_program_u)
     result, error_message, reasoning = prover9_program.execute_program()
     print('result:', result)
     print('reasoning:', reasoning)
