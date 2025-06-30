@@ -39,7 +39,7 @@ bash scripts/run_inference.sh
 python src/logic_inference.py
 ```
 
-4. Can use `scripts/demo.ipynb` for quick demo
+4. Can use `scripts/demo.ipynb` for quick demo (recommend to open in Google-colab)
 
 
 ### ！Important: PROVER9 Path Configuration
