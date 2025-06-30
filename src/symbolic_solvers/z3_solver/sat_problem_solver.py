@@ -8,6 +8,10 @@ import subprocess
 from subprocess import check_output
 from os.path import join
 import os
+try:
+    from .proof_pretty import pretty_sexpr_with_comments
+except ImportError:
+    from proof_pretty import pretty_sexpr_with_comments
 
 class LSAT_Z3_Program:
     def __init__(self, logic_program:str, dataset_name:str) -> None:
@@ -175,18 +179,31 @@ class LSAT_Z3_Program:
         with open(filename, "w") as f:
             f.write(self.standard_code)
         try:
-            output = check_output(["python", filename], stderr=subprocess.STDOUT, timeout=1.0)
+            output = check_output([
+                "python",
+                filename
+            ], stderr=subprocess.STDOUT, timeout=10.0, cwd=self.cache_dir)
         except subprocess.CalledProcessError as e:
-            outputs = e.output.decode("utf-8").strip().splitlines()[-1]
-            return None, outputs
+            outputs = e.output.decode("utf-8").strip()
+            return None, outputs, ''
         except subprocess.TimeoutExpired:
-            return None, 'TimeoutError'
+            return None, 'TimeoutError', ''
         output = output.decode("utf-8").strip()
-        result = output.splitlines()
-        if len(result) == 0:
-            return None, 'No Output'
-        
-        return result, ""
+        result_lines = output.splitlines()
+
+        if not result_lines:
+            return None, 'No Output', ''
+
+        proof_text = ''
+        proof_file = next((l.split(':',1)[1] for l in result_lines if l.startswith('PROOF_FILE:')), None)
+
+        if proof_file:
+            with open(os.path.join(self.cache_dir, proof_file), 'r', encoding='utf-8') as f:
+                raw_proof = f.read()
+            proof_text = pretty_sexpr_with_comments(raw_proof, indent=2)
+            result_lines = [l for l in result_lines if not l.startswith('PROOF_FILE:')]
+
+        return result_lines, "", proof_text
     
     def answer_mapping(self, answer):
         mapping = {'(A)': 'A', '(B)': 'B', '(C)': 'C', '(D)': 'D', '(E)': 'E',
@@ -220,6 +237,8 @@ is_valid(Exists([m:meals], eats(Vladimir, m) == poached_eggs)) ::: (E)'''
     z3_program = LSAT_Z3_Program(logic_program, 'AR-LSAT')
     print(z3_program.standard_code)
 
-    output, error_message = z3_program.execute_program()
-    print(output, error_message)
-    print(z3_program.answer_mapping(output))
+    output, error_message, proof = z3_program.execute_program()
+    print('ANSWER :', output[0] if output else None)
+    print('ERR    :', error_message)
+    print('PROOF #lines :', proof.count('\n') + 1 if proof else 0)
+    print('First 10 lines:\n', '\n'.join(proof.splitlines()[:10]))
