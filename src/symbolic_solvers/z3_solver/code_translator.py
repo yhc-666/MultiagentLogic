@@ -208,6 +208,7 @@ class CodeTranslator:
     def translate_option_verification(option_block, choice_name):
         lines = []
         lines.append("solver = Solver()")
+        lines.append("solver.set(proof=True)")
         lines.append("solver.add(pre_conditions)")
         for l in option_block:
             lines.append("solver.add(Not({}))".format(l))
@@ -220,7 +221,11 @@ class CodeTranslator:
         lines = []
 
         header_lines = [
-            "from z3 import *", ""
+            "from z3 import *",
+            "",
+            "set_param(proof=True)",
+            "_proof_log = []",
+            "",
         ]
 
         lines += header_lines
@@ -238,18 +243,24 @@ class CodeTranslator:
         function_lines = [
             "def is_valid(option_constraints):",
             TAB_STR + "solver = Solver()",
+            TAB_STR + "solver.set(proof=True)",
             TAB_STR + "solver.add(pre_conditions)",
             TAB_STR + "solver.add(Not(option_constraints))",
-            TAB_STR + "return solver.check() == unsat",
+            TAB_STR + "res = solver.check()",
+            TAB_STR + "if res == unsat:",
+            TAB_STR*2 + "_proof_log.append(solver.proof())",
+            TAB_STR + "return res == unsat",
             "",
             "def is_unsat(option_constraints):",
             TAB_STR + "solver = Solver()",
+            TAB_STR + "solver.set(proof=True)",
             TAB_STR + "solver.add(pre_conditions)",
             TAB_STR + "solver.add(option_constraints)",
             TAB_STR + "return solver.check() == unsat",
             "",
             "def is_sat(option_constraints):",
             TAB_STR + "solver = Solver()",
+            TAB_STR + "solver.set(proof=True)",
             TAB_STR + "solver.add(pre_conditions)",
             TAB_STR + "solver.add(option_constraints)",
             TAB_STR + "return solver.check() == sat",
@@ -274,4 +285,13 @@ class CodeTranslator:
                     lines += [line.line]
                 else:
                     lines += [f"if {line.line}: print('{choice_name}')"]
+        lines += [
+            "",
+            "if _proof_log:",
+            TAB_STR + "import uuid, os",
+            TAB_STR + "_fname = f'proof_{uuid.uuid4().hex}.smt2'",
+            TAB_STR + "with open(_fname, 'w', encoding='utf-8') as _f:",
+            TAB_STR*2 + "_f.write('\\n\\n'.join([p.sexpr() if hasattr(p, 'sexpr') else str(p) for p in _proof_log]))",
+            TAB_STR + "print(f'PROOF_FILE:{_fname}')",
+        ]
         return "\n".join(lines)
