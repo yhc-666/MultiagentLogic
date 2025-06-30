@@ -222,9 +222,12 @@ class CodeTranslator:
 
         header_lines = [
             "from z3 import *",
+            "import os, sys",
+            "sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))",
+            "from proof_pretty import pretty_sexpr_with_comments as _pretty",
             "",
             "set_param(proof=True)",
-            "_proof_log = []",
+            "_info_log = []",
             "",
         ]
 
@@ -241,29 +244,42 @@ class CodeTranslator:
         lines += [""]
 
         function_lines = [
-            "def is_valid(option_constraints):",
+            "def _store(tag, payload):",
+            TAB_STR + "if tag.startswith('PROOF'):",
+            TAB_STR*2 + "payload = _pretty(payload)",
+            TAB_STR + "_info_log.append(f'=== {tag} ===\\n{payload.strip()}\\n')",
+            "",
+            "def is_valid(option_constraints, label=None):",
             TAB_STR + "solver = Solver()",
             TAB_STR + "solver.set(proof=True)",
             TAB_STR + "solver.add(pre_conditions)",
             TAB_STR + "solver.add(Not(option_constraints))",
             TAB_STR + "res = solver.check()",
             TAB_STR + "if res == unsat:",
-            TAB_STR*2 + "_proof_log.append(solver.proof())",
+            TAB_STR*2 + "tag = f'PROOF for {label}' if label else f'PROOF for {option_constraints}'",
+            TAB_STR*2 + "_store(tag, solver.proof().sexpr())",
             TAB_STR + "return res == unsat",
             "",
-            "def is_unsat(option_constraints):",
+            "def is_unsat(option_constraints, label=None):",
             TAB_STR + "solver = Solver()",
             TAB_STR + "solver.set(proof=True)",
             TAB_STR + "solver.add(pre_conditions)",
             TAB_STR + "solver.add(option_constraints)",
-            TAB_STR + "return solver.check() == unsat",
+            TAB_STR + "res = solver.check()",
+            TAB_STR + "if res == unsat:",
+            TAB_STR*2 + "tag = f'PROOF for {label}' if label else f'PROOF for {option_constraints}'",
+            TAB_STR*2 + "_store(tag, solver.proof().sexpr())",
+            TAB_STR + "return res == unsat",
             "",
-            "def is_sat(option_constraints):",
+            "def is_sat(option_constraints, label=None):",
             TAB_STR + "solver = Solver()",
-            TAB_STR + "solver.set(proof=True)",
             TAB_STR + "solver.add(pre_conditions)",
             TAB_STR + "solver.add(option_constraints)",
-            TAB_STR + "return solver.check() == sat",
+            TAB_STR + "res = solver.check()",
+            TAB_STR + "if res == sat:",
+            TAB_STR*2 + "tag = f'MODEL for {label}' if label else f'MODEL for {option_constraints}'",
+            TAB_STR*2 + "_store(tag, str(solver.model()))",
+            TAB_STR + "return res == sat",
             "",
             "def is_accurate_list(option_constraints):",
             TAB_STR + "return is_valid(Or(option_constraints)) and all([is_sat(c) for c in option_constraints])",
@@ -284,14 +300,16 @@ class CodeTranslator:
                 if line.line_type == CodeTranslator.LineType.DECL:
                     lines += [line.line]
                 else:
-                    lines += [f"if {line.line}: print('{choice_name}')"]
+                    call_line = line.line
+                    if call_line.startswith('is_sat(') or call_line.startswith('is_valid(') or call_line.startswith('is_unsat('):
+                        call_line = call_line[:-1] + f", '{choice_name}')"
+                    lines += [f"if {call_line}: print('{choice_name}')"]
         lines += [
             "",
-            "if _proof_log:",
-            TAB_STR + "import uuid, os",
-            TAB_STR + "_fname = f'proof_{uuid.uuid4().hex}.smt2'",
-            TAB_STR + "with open(_fname, 'w', encoding='utf-8') as _f:",
-            TAB_STR*2 + "_f.write('\\n\\n'.join([p.sexpr() if hasattr(p, 'sexpr') else str(p) for p in _proof_log]))",
-            TAB_STR + "print(f'PROOF_FILE:{_fname}')",
+            "if _info_log:",
+            TAB_STR + "print('---INFO_BEGIN---')",
+            TAB_STR + "for chunk in _info_log:",
+            TAB_STR*2 + "print(chunk.rstrip())",
+            TAB_STR + "print('---INFO_END---')",
         ]
         return "\n".join(lines)
