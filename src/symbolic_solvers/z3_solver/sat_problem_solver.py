@@ -8,10 +8,6 @@ import subprocess
 from subprocess import check_output
 from os.path import join
 import os
-try:
-    from .proof_pretty import pretty_sexpr_with_comments
-except ImportError:
-    from proof_pretty import pretty_sexpr_with_comments
 
 class LSAT_Z3_Program:
     def __init__(self, logic_program:str, dataset_name:str) -> None:
@@ -194,14 +190,39 @@ class LSAT_Z3_Program:
         if not result_lines:
             return None, 'No Output', ''
 
-        proof_text = ''
-        proof_file = next((l.split(':',1)[1] for l in result_lines if l.startswith('PROOF_FILE:')), None)
+        info_lines = []
+        if '---INFO_BEGIN---' in result_lines:
+            b = result_lines.index('---INFO_BEGIN---')
+            e = result_lines.index('---INFO_END---')
+            info_lines = result_lines[b+1:e]
+            result_lines = result_lines[:b] + result_lines[e+1:]
 
-        if proof_file:
-            with open(os.path.join(self.cache_dir, proof_file), 'r', encoding='utf-8') as f:
-                raw_proof = f.read()
-            proof_text = pretty_sexpr_with_comments(raw_proof, indent=2)
-            result_lines = [l for l in result_lines if not l.startswith('PROOF_FILE:')]
+        selected = None
+        for line in result_lines:
+            if line.strip() in ['(A)', '(B)', '(C)', '(D)', '(E)']:
+                selected = line.strip()
+                break
+
+        proof_text = ''
+        if info_lines:
+            if selected:
+                sections = []
+                tag = None
+                body = []
+                for ln in info_lines:
+                    if ln.startswith('=== '):
+                        if tag is not None:
+                            sections.append((tag, body))
+                        tag = ln
+                        body = []
+                    else:
+                        body.append(ln)
+                if tag is not None:
+                    sections.append((tag, body))
+                filtered = [tag + '\n' + '\n'.join(body) for tag, body in sections if selected in tag]
+                proof_text = '\n'.join(filtered)
+            else:
+                proof_text = '\n'.join(info_lines)
 
         return result_lines, "", proof_text
     
