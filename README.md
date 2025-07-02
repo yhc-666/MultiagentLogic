@@ -1,7 +1,7 @@
 # MultiagentLogic
 This project is the implementatiom of logic sover engine for MultiagentLogic in which reasoning path is retrievable.
-Input: Logic dataset in SL format
-Output: Solutions + reasoning path
+- Input: Logic dataset in SL format
+- Output: Solutions + reasoning path
 
 ## Project Structure
 
@@ -46,7 +46,7 @@ python src/logic_inference.py
 
 You need to configure the PROVER9 path based on your operating system in `src/symbolic_solvers/fol_solver/prover9_solver.py` (around line 20-21).
 
-#### For Different Operating Systems:
+#### For Different Operating Systems (strongly suggest linux):
 
 **Linux Users:**
 ```python
