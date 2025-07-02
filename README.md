@@ -42,11 +42,11 @@ python src/logic_inference.py
 4. Can use `scripts/demo.ipynb` for quick demo (recommend to open in Google-colab)
 
 
-### ！Important: PROVER9 Path Configuration
+## ！Important: PROVER9 Path Configuration
 
 You need to configure the PROVER9 path based on your operating system in `src/symbolic_solvers/fol_solver/prover9_solver.py` (around line 20-21).
 
-#### For Different Operating Systems (strongly suggest linux):
+### For Different Operating Systems (strongly suggest linux):
 
 **Linux Users:**
 ```python
