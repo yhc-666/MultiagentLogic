@@ -245,7 +245,7 @@ class Pyke_Program:
         else:
             raise ValueError(f'Invalid query: {query}')
 
-    def execute_program(self):
+    def execute_program_wo_reasoning(self):
         """
         执行逻辑程序，进行推理
         
@@ -317,10 +317,10 @@ class Pyke_Program:
     # ------------------------------------------------------------------
     # Functions for revealing solver reasoning process using Pyke tracing
 
-    def execute_with_reasoning(self):
+    def execute_program(self):
         rule_map = {f"rule{i+1}": r.split(':::')[0].strip() for i, r in enumerate(self.Rules_full)}
         patch_pyke(rule_map)
-        answer, msg = self.execute_program()
+        answer, msg = self.execute_program_wo_reasoning()
         reasoning = tracer.events
         if tracer.new_facts:
             reasoning.append("All newly implied Facts: " + ', '.join(sorted(tracer.new_facts)))
@@ -444,7 +444,7 @@ Green(Harry, False) ::: Harry is not green."""
     import json
     for test in tests:
         pyke_program = Pyke_Program(test, 'ProofWriter')
-        result, _, reasoning = pyke_program.execute_with_reasoning()
+        result, _, reasoning = pyke_program.execute_program()
         print(result)
         print(reasoning)
         with open('sample_data/reasonprocess.json', 'w') as f:

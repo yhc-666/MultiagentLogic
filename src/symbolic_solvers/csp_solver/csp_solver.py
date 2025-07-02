@@ -108,8 +108,9 @@ class CSP_Program:
         if debug_mode:
             print(py_program_str)
         
+        reasoning = '' # TODO: add reasoning
         ans, err_msg = self.safe_execute(py_program_str, debug_mode=debug_mode)
-        return ans, err_msg
+        return ans, err_msg, reasoning
     
     def answer_mapping(self, answer):
         self.option_pattern = r'^\w+\)'

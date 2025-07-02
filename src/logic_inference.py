@@ -45,20 +45,27 @@ class LogicInferenceEngine:
             json.dump(outputs, f, indent=2, ensure_ascii=False)
 
     def safe_execute_program(self, key, logic_program, example_id):
+        """
+        returns:
+            answer: the answer to the question
+            status_code: 'success' or 'execution error' or 'parsing error'
+            error_message: the error message if status_code is 'execution error' or 'parsing error'
+            reasoning: the reasoning if status_code is 'success'
+        """
         cls, dataset_name = PROGRAM_CLASS[key]
         program = cls(logic_program, dataset_name)
 
         if not getattr(program, 'flag', True): # flag 表示是否成功parse逻辑程序SL, 不代表execute成功与否
             answer = self.backup_generators[key].get_backup_answer(example_id)
-            return answer, 'parsing error', ''
+            return answer, 'parsing error', '', ''
 
-        answer, err = program.execute_program()
+        answer, err, reasoning = program.execute_program()
         if answer is None:
             answer = self.backup_generators[key].get_backup_answer(example_id)
-            return answer, 'execution error', err
+            return answer, 'execution error', err, ''
 
         mapped = program.answer_mapping(answer)
-        return mapped, 'success', ''
+        return mapped, 'success', '', reasoning
 
     def inference_on_dataset(self):
         outputs = []
@@ -72,9 +79,11 @@ class LogicInferenceEngine:
             }
             for key in ['LP', 'FOL', 'CSP', 'SAT']:
                 logic_str = example[key][0]
-                predicted, status_code, _ = self.safe_execute_program(key, logic_str, example['id'])
+                predicted, status_code, err, reasoning = self.safe_execute_program(key, logic_str, example['id'])
                 result[f'{key}_status_code'] = status_code
+                result[f'{key}_error_message'] = err
                 result[f'{key}_predicted_answer'] = predicted
+                result[f'{key}_reasoning'] = reasoning
             outputs.append(result)
 
         self.save_results(outputs)
