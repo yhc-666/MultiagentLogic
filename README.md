@@ -1,7 +1,6 @@
 # MultiagentLogic
-This project is the implementatiom of logic sover engine for MultiagentLogic in which reasoning path is retrievable.
-- Input: Logic dataset in SL format
-- Output: Solutions + reasoning path
+- This project is the implementatiom of logic sover engine in which reasoning paths are retrievable.
+- Can refer to `sample_data/` for input and output format.
 
 ## Project Structure
 
