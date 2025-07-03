@@ -1,5 +1,5 @@
 # MultiagentLogic
-- This project is the implementatiom of logic sover engine in which reasoning paths are retrievable.
+- This project implements logic solver engines in which reasoning paths are retrievable.
 - Can refer to `sample_data/` for input and output format.
 
 ## Project Structure
@@ -15,8 +15,8 @@
 │   └── ...
 ├── scripts/
 │   ├── run_inference.sh       # Convenience launcher
-│   └── demo.ipynb             # Jupyter note book for quick demo
-├── sample_data/               # Example inputs / output
+│   └── demo.ipynb             # Jupyter notebook for quick demo
+├── sample_data/               # Example inputs/output
 ├── requirements.txt           
 └── README.md
 ```
