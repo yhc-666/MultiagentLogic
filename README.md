@@ -60,7 +60,7 @@ macOS users should install Prover9 via Homebrew and use this configuration. To i
 ```bash
 brew install prover9
 ```
-How prooftrans does not support macOS so not able to retrieve reasoning path for Prover9 on macOS.
+However prooftrans does not support macOS so not able to retrieve reasoning path for Prover9 on macOS.
 
 **Windows Users:**
 Similar to MacOS
