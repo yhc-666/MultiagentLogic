@@ -10,54 +10,41 @@ import re
 from symbolic_solvers.pyke_solver.pyke_trace import patch_pyke, unpatch_pyke, tracer
 
 class Pyke_Program:
-    """
-    Main Functions:
-    1. 解析包含谓词、事实、规则和查询的逻辑程序
-    2. 将逻辑程序转换为Pyke引擎可理解的格式
-    3. 执行推理并返回答案
-    
-    Supported datasets: ProntoQA, ProofWriter
-    """
-    
     def __init__(self, logic_program: str, dataset_name='ProntoQA') -> None:
         """
-        初始化Pyke程序
-        
         Args:
-            logic_program (str): 包含逻辑程序的字符串，格式包含Predicates、Facts、Rules、Query等部分
-            dataset_name (str): 数据集名称，支持'ProntoQA'和'ProofWriter'
+            logic_program (str): SL, including Predicates, Facts, Rules, Query
+            dataset_name (str): dataset name, support 'ProntoQA' and 'ProofWriter'
         """
         self.logic_program = logic_program
-        self.flag = self.parse_logic_program()  # 解析逻辑程序，返回是否成功
+        self.flag = self.parse_logic_program()  # parse SL, return whether success
         self.dataset_name = dataset_name
         
-        # 创建缓存目录用于保存Pyke程序文件
         cache_dir = os.path.join(os.path.dirname(__file__), '.cache_program')
         if not os.path.exists(cache_dir):
             os.makedirs(cache_dir)
         self.cache_dir = cache_dir
 
-        # 准备事实和规则文件
         try:
-            self.create_fact_file(self.Facts)  # 创建事实文件(.kfb格式)
-            self.create_rule_file(self.Rules)  # 创建规则文件(.krb格式)
+            self.create_fact_file(self.Facts)
+            self.create_rule_file(self.Rules)
             self.flag = True
         except:
             self.flag = False
 
-        # 不同数据集的答案映射函数
+        # answer mapping function for different datasets
         self.answer_map = {'ProntoQA': self.answer_map_prontoqa, 
                            'ProofWriter': self.answer_map_proofwriter}
 
     def parse_logic_program(self):
         """
-        解析逻辑程序字符串，提取各个组件
+        parse SL, extract each component
         
-        逻辑程序格式示例：
-        Predicates: ... (谓词定义)
-        Facts: ... (事实)
-        Rules: ... (规则)
-        Query: ... (查询)
+        SL format example:
+        Predicates: ... 
+        Facts: ... 
+        Rules: ... 
+        Query: ... 
         
         Returns:
             bool: 解析是否成功
@@ -65,7 +52,6 @@ class Pyke_Program:
         keywords = ['Query:', 'Rules:', 'Facts:', 'Predicates:']
         program_str = self.logic_program
 
-        # 逐个解析各个部分，同时保留带注释的原始内容用于展示
         for keyword in keywords:
             try:
                 program_str, segment_list = self._parse_segment(program_str, keyword)
@@ -80,41 +66,32 @@ class Pyke_Program:
 
     def _parse_segment(self, program_str, key_phrase):
         """
-        解析程序中的特定段落
+        parse specific segment in program
         
         Args:
-            program_str (str): 程序字符串
-            key_phrase (str): 关键短语（如'Facts:'）
+            program_str (str): program string
+            key_phrase (str): key phrase (e.g., 'Facts:')
             
         Returns:
-            tuple: (剩余程序字符串, 解析出的段落列表)
+            tuple: (remaining program string, parsed segment list)
         """
         remain_program_str, segment = program_str.split(key_phrase)
         segment_list = segment.strip().split('\n')
         return remain_program_str, segment_list
 
     def validate_program(self):
-        """
-        验证程序是否有效；如果无效，尝试修复
-        
-        Returns:
-            bool: 程序是否有效
-        """
-        # 检查规则和事实是否存在且非空
         if not self.Rules is None and not self.Facts is None:
             if not self.Rules[0] == '' and not self.Facts[0] == '':
                 return True
                 
-        # 尝试修复程序：重新分类规则和事实
         tmp_rules = []
         tmp_facts = []
         statements = self.Facts if self.Facts is not None else self.Rules
         if statements is None:
             return False
         
-        # 根据是否包含'>>>'来区分规则和事实
         for fact in statements:
-            if fact.find('>>>') >= 0:  # 包含'>>>'的是规则
+            if fact.find('>>>') >= 0:
                 tmp_rules.append(fact)
             else:
                 tmp_facts.append(fact)
@@ -123,12 +100,6 @@ class Pyke_Program:
         return False
     
     def create_fact_file(self, facts):
-        """
-        创建Pyke事实文件(.kfb格式)
-        
-        Args:
-            facts (list): 事实列表
-        """
         with open(os.path.join(self.cache_dir, 'facts.kfb'), 'w') as f:
             for fact in facts:
                 # 过滤掉包含变量$x的无效事实
@@ -136,15 +107,8 @@ class Pyke_Program:
                     f.write(fact + '\n')
 
     def create_rule_file(self, rules):
-        """
-        创建Pyke规则文件(.krb格式)
-        
-        Args:
-            rules (list): 规则列表
-        """
         pyke_rules = []
         for idx, rule in enumerate(rules):
-            # 将每个规则转换为Pyke格式
             pyke_rules.append(self.parse_forward_rule(idx + 1, rule))
 
         with open(os.path.join(self.cache_dir, 'rules.krb'), 'w') as f:
@@ -152,17 +116,17 @@ class Pyke_Program:
 
     def parse_forward_rule(self, f_index, rule):
         """
-        解析前向推理规则，转换为Pyke格式
+        parse forward reasoning rule, convert to Pyke format
         
-        示例规则: Furry($x, True) && Quite($x, True) >>> White($x, True)
-        转换为Pyke的foreach-assert格式
-        
+        example rule: Furry($x, True) && Quite($x, True) >>> White($x, True)
+        convert to Pyke's foreach-assert format
+
         Args:
-            f_index (int): 规则索引
-            rule (str): 原始规则字符串
+            f_index (int): rule index
+            rule (str): original rule string
             
         Returns:
-            str: Pyke格式的规则
+            str: Pyke format rule
         """
         premise, conclusion = rule.split('>>>')
         premise = premise.strip()
@@ -189,18 +153,18 @@ class Pyke_Program:
     
     def check_specific_predicate(self, subject_name, predicate_name, engine):
         """
-        检查特定主体的特定谓词值
+        check specific predicate value of specific subject
         
-        示例: 检查Marvin是否来自火星
+        example: check if Marvin is from Mars
         Query: FromMars(Marvin, $label)
         
         Args:
-            subject_name (str): 主体名称
-            predicate_name (str): 谓词名称
-            engine: Pyke推理引擎
+            subject_name
+            predicate_name
+            engine
             
         Returns:
-            推理结果（True/False/None）
+            reasoning result (True/False/None)
         """
         results = []
         

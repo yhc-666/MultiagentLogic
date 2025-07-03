@@ -6,7 +6,6 @@ from nltk.sem.logic import NegatedExpression
 import subprocess, shutil
 import tempfile, textwrap, itertools as it
 
-# 添加当前项目根目录到路径，支持绝对导入
 current_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.join(current_dir, '..', '..', '..')
 sys.path.insert(0, project_root)
@@ -167,7 +166,6 @@ class FOL_Prover9_Program:
             result = prover.prove()
             # print(prover.proof())
 
-            # 构造推导路径信息
             proof_trace = ''
 
             if result:
