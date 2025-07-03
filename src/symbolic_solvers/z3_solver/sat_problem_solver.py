@@ -2,7 +2,6 @@ from collections import OrderedDict
 try:
     from .code_translator import *
 except ImportError:
-    # 当直接运行此文件时，使用绝对导入
     from code_translator import *
 import subprocess
 from subprocess import check_output
