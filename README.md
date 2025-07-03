@@ -63,4 +63,4 @@ brew install prover9
 How prooftrans does not support macOS so not able to retrieve reasoning path for Prover9 on macOS.
 
 **Windows Users:**
-Sorry不太熟悉windowsOS, same 安装PROVER9并配置路径即可, but may also have problem with prooftrans as macOS
+Similar to MacOS
