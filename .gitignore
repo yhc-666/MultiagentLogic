@@ -3,3 +3,4 @@ __pycache__/
 *.pyc
 *.log
 scripts/*.sh~
+src/symbolic_solvers/Prover9/

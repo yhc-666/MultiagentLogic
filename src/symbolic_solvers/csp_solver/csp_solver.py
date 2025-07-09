@@ -82,7 +82,17 @@ class CSP_Program:
 
     def execute_program(self, debug_mode = False):
         # parse the logic program into CSP python program
-        python_program_list = ['from constraint import *', 'problem = Problem()']
+        python_program_list = [
+            'import tracer',
+            'collector = tracer.enable_tracing()',
+            'from constraint import *', 
+            'problem = Problem()'
+        ]
+        
+        # 将原始约束规则传递给tracer
+        constraint_rules = {}
+        constraint_index = 0
+        
         # add variables
         for variable in self.Variables:
             variable_name, variable_domain = variable.split('[IN]')
@@ -98,18 +108,29 @@ class CSP_Program:
                 parsed_constraint = self.parse_all_different_constraint(rule)
             else:
                 parsed_constraint = self.parse_numeric_constraint(rule)
-            # create the constraint
+            
+            # 存储原始规则与约束的映射
+            constraint_rules[constraint_index] = rule
+            
+            # create the constraint with index
             python_program_list.append(f'problem.addConstraint({parsed_constraint})')
+            python_program_list.append(f'tracer.set_constraint_rule({constraint_index}, "{rule}")')
+            constraint_index += 1
         
         # solve the problem
         python_program_list.append(f'ans = problem.getSolutions()')
+        # get reasoning trace
+        python_program_list.append(f'reasoning = tracer.get_trace()')
         # execute the python program
         py_program_str = '\n'.join(python_program_list)
         if debug_mode:
             print(py_program_str)
         
-        reasoning = '' # TODO: add reasoning
-        ans, err_msg = self.safe_execute(py_program_str, debug_mode=debug_mode)
+        result, err_msg = self.safe_execute(py_program_str, keys=["ans", "reasoning"], debug_mode=debug_mode)
+        if result is None:
+            return None, err_msg, ""
+        
+        ans, reasoning = result
         return ans, err_msg, reasoning
     
     def answer_mapping(self, answer):
@@ -140,6 +161,13 @@ class CSP_Program:
 if __name__ == "__main__":
     logic_program = "Domain:\n1: leftmost\n5: rightmost\nVariables:\ngreen_book [IN] [1, 2, 3, 4, 5]\nblue_book [IN] [1, 2, 3, 4, 5]\nwhite_book [IN] [1, 2, 3, 4, 5]\npurple_book [IN] [1, 2, 3, 4, 5]\nyellow_book [IN] [1, 2, 3, 4, 5]\nConstraints:\nblue_book > yellow_book ::: The blue book is to the right of the yellow book.\nwhite_book < yellow_book ::: The white book is to the left of the yellow book.\nblue_book == 4 ::: The blue book is the second from the right.\npurple_book == 2 ::: The purple book is the second from the left.\nAllDifferentConstraint([green_book, blue_book, white_book, purple_book, yellow_book]) ::: All books have different values.\nQuery:\nA) green_book == 2 ::: The green book is the second from the left.\nB) blue_book == 2 ::: The blue book is the second from the left.\nC) white_book == 2 ::: The white book is the second from the left.\nD) purple_book == 2 ::: The purple book is the second from the left.\nE) yellow_book == 2 ::: The yellow book is the second from the left."
     csp_program = CSP_Program(logic_program, 'LogicalDeduction')
-    ans = csp_program.execute_program()
-    print(ans)
-    print(csp_program.answer_mapping(ans))
+    ans, err_msg, reasoning = csp_program.execute_program()
+    print("Answer:", ans)
+    print("Error:", err_msg)
+    print("Final answer:", csp_program.answer_mapping(ans))
+    
+    # 展示推理过程
+    if reasoning:
+        from tracer import trace_to_text
+        print("\nReasoning trace:")
+        print(trace_to_text(reasoning))
