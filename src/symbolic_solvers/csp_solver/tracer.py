@@ -255,7 +255,7 @@ def trace_to_text(trace_data):
     
     lines = []
     lines.append("=== CSP Solving Trace ===")
-    lines.append(f"Summary: {trace_data['summary']}")
+    #lines.append(f"Summary: {trace_data['summary']}")
     lines.append("")
     
     for event_type, depth, data in trace_data["trace"]:

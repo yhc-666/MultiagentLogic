@@ -81,10 +81,22 @@ class CSP_Program:
         return parsed_constraint
 
     def execute_program(self, debug_mode = False):
+        # 直接导入tracer模块
+        import sys
+        import os
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        sys.path.insert(0, current_dir)
+        
+        try:
+            import tracer
+            tracer.enable_tracing()
+            tracer.clear_constraint_rules()
+        except ImportError:
+            # 如果无法导入tracer，返回错误
+            return None, "Failed to import tracer module", ""
+        
         # parse the logic program into CSP python program
         python_program_list = [
-            'import tracer',
-            'collector = tracer.enable_tracing()',
             'from constraint import *', 
             'problem = Problem()'
         ]
@@ -111,26 +123,26 @@ class CSP_Program:
             
             # 存储原始规则与约束的映射
             constraint_rules[constraint_index] = rule
+            tracer.set_constraint_rule(constraint_index, rule)
             
             # create the constraint with index
             python_program_list.append(f'problem.addConstraint({parsed_constraint})')
-            python_program_list.append(f'tracer.set_constraint_rule({constraint_index}, "{rule}")')
             constraint_index += 1
         
         # solve the problem
         python_program_list.append(f'ans = problem.getSolutions()')
-        # get reasoning trace
-        python_program_list.append(f'reasoning = tracer.get_trace()')
         # execute the python program
         py_program_str = '\n'.join(python_program_list)
         if debug_mode:
             print(py_program_str)
         
-        result, err_msg = self.safe_execute(py_program_str, keys=["ans", "reasoning"], debug_mode=debug_mode)
+        result, err_msg = self.safe_execute(py_program_str, keys=["ans"], debug_mode=debug_mode)
         if result is None:
             return None, err_msg, ""
         
-        ans, reasoning = result
+        ans = result[0] if isinstance(result, list) else result
+        reasoning = tracer.get_trace()
+        reasoning = tracer.trace_to_text(reasoning)
         return ans, err_msg, reasoning
     
     def answer_mapping(self, answer):
@@ -160,7 +172,8 @@ class CSP_Program:
     
 if __name__ == "__main__":
     logic_program = "Domain:\n1: leftmost\n5: rightmost\nVariables:\ngreen_book [IN] [1, 2, 3, 4, 5]\nblue_book [IN] [1, 2, 3, 4, 5]\nwhite_book [IN] [1, 2, 3, 4, 5]\npurple_book [IN] [1, 2, 3, 4, 5]\nyellow_book [IN] [1, 2, 3, 4, 5]\nConstraints:\nblue_book > yellow_book ::: The blue book is to the right of the yellow book.\nwhite_book < yellow_book ::: The white book is to the left of the yellow book.\nblue_book == 4 ::: The blue book is the second from the right.\npurple_book == 2 ::: The purple book is the second from the left.\nAllDifferentConstraint([green_book, blue_book, white_book, purple_book, yellow_book]) ::: All books have different values.\nQuery:\nA) green_book == 2 ::: The green book is the second from the left.\nB) blue_book == 2 ::: The blue book is the second from the left.\nC) white_book == 2 ::: The white book is the second from the left.\nD) purple_book == 2 ::: The purple book is the second from the left.\nE) yellow_book == 2 ::: The yellow book is the second from the left."
-    csp_program = CSP_Program(logic_program, 'LogicalDeduction')
+    logic_program_2 = "Domain:\n1: oldest\n5: newest\nVariables:\nstation_wagon [IN] [1, 2, 3, 4, 5]\nsedan [IN] [1, 2, 3, 4, 5]\ntractor [IN] [1, 2, 3, 4, 5]\nmotorcycle [IN] [1, 2, 3, 4, 5]\nlimousine [IN] [1, 2, 3, 4, 5]\nConstraints:\ntractor > motorcycle ::: The tractor is newer than the motorcycle.\nmotorcycle > sedan ::: The motorcycle is newer than the sedan.\nlimousine == 1 ::: The limousine is the oldest.\nstation_wagon == 5 ::: The station wagon is the newest.\nAllDifferentConstraint([station_wagon, sedan, tractor, motorcycle, limousine]) ::: All vehicles have different values.\nQuery:\nA) station_wagon == 1 ::: The station wagon is the oldest.\nB) sedan == 1 ::: The sedan is the oldest.\nC) tractor == 1 ::: The tractor is the oldest.\nD) motorcycle == 1 ::: The motorcycle is the oldest.\nE) limousine == 1 ::: The limousine is the oldest."
+    csp_program = CSP_Program(logic_program_2, 'LogicalDeduction')
     ans, err_msg, reasoning = csp_program.execute_program()
     print("Answer:", ans)
     print("Error:", err_msg)

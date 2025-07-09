@@ -16,12 +16,220 @@
     "LP_reasoning": "We first define following predicates and corresponding natural language explanations:\n  Cold($x, bool) ::: Is x cold?\n  Quiet($x, bool) ::: Is x quiet?\n  Red($x, bool) ::: Is x red?\n  Smart($x, bool) ::: Is x smart?\n  Kind($x, bool) ::: Is x kind?\n  Rough($x, bool) ::: Is x rough?\n  Round($x, bool) ::: Is x round?\nWe have following known facts from the context:\n  Cold(Bob, True) ::: Bob is cold.\n  Quiet(Bob, True) ::: Bob is quiet.\n  Red(Bob, True) ::: Bob is red.\n  Smart(Bob, True) ::: Bob is smart.\n  Kind(Charlie, True) ::: Charlie is kind.\n  Quiet(Charlie, True) ::: Charlie is quiet.\n  Red(Charlie, True) ::: Charlie is red.\n  Rough(Charlie, True) ::: Charlie is rough.\n  Cold(Dave, True) ::: Dave is cold.\n  Kind(Dave, True) ::: Dave is kind.\n  Smart(Dave, True) ::: Dave is smart.\n  Quiet(Fiona, True) ::: Fiona is quiet.\nWe have following known rules from the context:\n  rule1: Quiet($x, True) && Cold($x, True) >>> Smart($x, True)\n  rule2: Red($x, True) && Cold($x, True) >>> Round($x, True)\n  rule3: Kind($x, True) && Rough($x, True) >>> Red($x, True)\n  rule4: Quiet($x, True) >>> Rough($x, True)\n  rule5: Cold($x, True) && Smart($x, True) >>> Red($x, True)\n  rule6: Rough($x, True) >>> Cold($x, True)\n  rule7: Red($x, True) >>> Rough($x, True)\n  rule8: Smart(Dave, True) && Kind(Dave, True) >>> Quiet(Dave, True)\nNow begin reasoning to obtain all implied facts:\nUse rule1: Quiet($x, True) && Cold($x, True) >>> Smart($x, True)\nBind $x to 'Bob'\nObtain an already known or implied fact: Smart('Bob', True)\nUnbind $x\nBind $x to 'Charlie'\nUnbind $x\nBind $x to 'Fiona'\nUnbind $x\nFinish implied with rule1\nUse rule2: Red($x, True) && Cold($x, True) >>> Round($x, True)\nBind $x to 'Bob'\nObtain a new implied fact: Round('Bob', True)\nUnbind $x\nBind $x to 'Charlie'\nUnbind $x\nFinish implied with rule2\nUse rule3: Kind($x, True) && Rough($x, True) >>> Red($x, True)\nBind $x to 'Charlie'\nObtain an already known or implied fact: Red('Charlie', True)\nUnbind $x\nBind $x to 'Dave'\nUnbind $x\nFinish implied with rule3\nUse rule4: Quiet($x, True) >>> Rough($x, True)\nBind $x to 'Bob'\nObtain a new implied fact: Rough('Bob', True)\nReuse rule3: Kind($x, True) && Rough($x, True) >>> Red($x, True)\nBind $x to 'Bob'\nFinish implied with rule3\nUse rule6: Rough($x, True) >>> Cold($x, True)\nFinish implied with rule6\nReuse rule3: Kind($x, True) && Rough($x, True) >>> Red($x, True)\nBind $x to 'Fiona'\nFinish implied with rule3\nReuse rule6: Rough($x, True) >>> Cold($x, True)\nFinish implied with rule6\nFinish implied with rule4\nUse rule5: Cold($x, True) && Smart($x, True) >>> Red($x, True)\nBind $x to 'Bob'\nObtain an already known or implied fact: Red('Bob', True)\nUnbind $x\nBind $x to 'Dave'\nObtain a new implied fact: Red('Dave', True)\nReuse rule2: Red($x, True) && Cold($x, True) >>> Round($x, True)\nBind $x to 'Dave'\nObtain a new implied fact: Round('Dave', True)\nFinish implied with rule2\nUse rule7: Red($x, True) >>> Rough($x, True)\nFinish implied with rule7\nFinish implied with rule5\nReuse rule6: Rough($x, True) >>> Cold($x, True)\nBind $x to 'Charlie'\nObtain a new implied fact: Cold('Charlie', True)\nReuse rule1: Quiet($x, True) && Cold($x, True) >>> Smart($x, True)\nBind $x to 'Charlie'\nObtain a new implied fact: Smart('Charlie', True)\nReuse rule5: Cold($x, True) && Smart($x, True) >>> Red($x, True)\nBind $x to 'Charlie'\nObtain an already known or implied fact: Red('Charlie', True)\nFinish implied with rule5\nUse rule8: Smart(Dave, True) && Kind(Dave, True) >>> Quiet(Dave, True)\nFinish implied with rule8\nFinish implied with rule1\nReuse rule2: Red($x, True) && Cold($x, True) >>> Round($x, True)\nBind $x to 'Charlie'\nObtain a new implied fact: Round('Charlie', True)\nFinish implied with rule2\nReuse rule5: Cold($x, True) && Smart($x, True) >>> Red($x, True)\nBind $x to 'Charlie'\nObtain an already known or implied fact: Red('Charlie', True)\nFinish implied with rule5\nReuse rule1: Quiet($x, True) && Cold($x, True) >>> Smart($x, True)\nBind $x to 'Fiona'\nObtain a new implied fact: Smart('Fiona', True)\nReuse rule5: Cold($x, True) && Smart($x, True) >>> Red($x, True)\nBind $x to 'Fiona'\nObtain a new implied fact: Red('Fiona', True)\nReuse rule2: Red($x, True) && Cold($x, True) >>> Round($x, True)\nBind $x to 'Fiona'\nObtain a new implied fact: Round('Fiona', True)\nFinish implied with rule2\nReuse rule7: Red($x, True) >>> Rough($x, True)\nFinish implied with rule7\nFinish implied with rule5\nReuse rule8: Smart(Dave, True) && Kind(Dave, True) >>> Quiet(Dave, True)\nFinish implied with rule8\nFinish implied with rule1\nReuse rule2: Red($x, True) && Cold($x, True) >>> Round($x, True)\nBind $x to 'Fiona'\nObtain an already known or implied fact: Round('Fiona', True)\nFinish implied with rule2\nReuse rule5: Cold($x, True) && Smart($x, True) >>> Red($x, True)\nBind $x to 'Fiona'\nObtain an already known or implied fact: Red('Fiona', True)\nFinish implied with rule5\nFinish implied with rule6\nReuse rule7: Red($x, True) >>> Rough($x, True)\nBind $x to 'Bob'\nObtain an already known or implied fact: Rough('Bob', True)\nUnbind $x\nBind $x to 'Charlie'\nObtain an already known or implied fact: Rough('Charlie', True)\nUnbind $x\nBind $x to 'Dave'\nObtain a new implied fact: Rough('Dave', True)\nReuse rule3: Kind($x, True) && Rough($x, True) >>> Red($x, True)\nBind $x to 'Dave'\nObtain an already known or implied fact: Red('Dave', True)\nFinish implied with rule3\nReuse rule6: Rough($x, True) >>> Cold($x, True)\nBind $x to 'Dave'\nObtain an already known or implied fact: Cold('Dave', True)\nFinish implied with rule6\nFinish implied with rule7\nReuse rule8: Smart(Dave, True) && Kind(Dave, True) >>> Quiet(Dave, True)\nObtain a new implied fact: Quiet('Dave', True)\nReuse rule1: Quiet($x, True) && Cold($x, True) >>> Smart($x, True)\nBind $x to 'Dave'\nObtain an already known or implied fact: Smart('Dave', True)\nFinish implied with rule1\nReuse rule4: Quiet($x, True) >>> Rough($x, True)\nBind $x to 'Dave'\nObtain an already known or implied fact: Rough('Dave', True)\nFinish implied with rule4\nFinish implied with rule8\nAll newly implied Facts: Cold('Charlie', True), Quiet('Dave', True), Red('Dave', True), Red('Fiona', True), Rough('Bob', True), Rough('Dave', True), Round('Bob', True), Round('Charlie', True), Round('Dave', True), Round('Fiona', True), Smart('Charlie', True), Smart('Fiona', True)\nFinish reasoning",
     "FOL_status_code": "execution error",
     "FOL_error_message": "[Errno 8] Exec format error: '/Users/haochengyang/Desktop/logicalLLM/AAAI/MultiagentLogic/src/symbolic_solvers/fol_solver/../Prover9/bin/prover9'",
-    "FOL_predicted_answer": "C",
+    "FOL_predicted_answer": "A",
     "FOL_reasoning": "",
     "CSP_status_code": "success",
     "CSP_error_message": "",
     "CSP_predicted_answer": "D",
-    "CSP_reasoning": "=== CSP Solving Trace ===\n\nTRY: yellow_book = 5\n  TRY: blue_book = 4\n    TRY: white_book = 3\n      TRY: purple_book = 2\n        TRY: green_book = 1\n          SUCCESS: {'yellow_book': 5, 'blue_book': 4, 'white_book': 3, 'purple_book': 2, 'green_book': 1}\n          BACKTRACK: green_book (no more values to try)\n      TRY: white_book = 2\n    FAIL: white_book = 2 (violates: AllDifferentConstraint([green_book, blue_book, white_book, purple_book, yellow_book]))\n      TRY: white_book = 1\n      TRY: purple_book = 2\n        TRY: green_book = 3\n          SUCCESS: {'yellow_book': 5, 'blue_book': 4, 'white_book': 1, 'purple_book': 2, 'green_book': 3}\n          BACKTRACK: green_book (no more values to try)\n  TRY: yellow_book = 4\nFAIL: yellow_book = 4 (violates: yellow_book > blue_book)\n  TRY: yellow_book = 3\nFAIL: yellow_book = 3 (violates: yellow_book > blue_book)\n  TRY: yellow_book = 2\nFAIL: yellow_book = 2 (violates: yellow_book > blue_book)\n  TRY: yellow_book = 1\nFAIL: yellow_book = 1 (violates: yellow_book > blue_book)\n  BACKTRACK: yellow_book (no more values to try)",
+    "CSP_reasoning": {
+      "trace": [
+        [
+          "TRY",
+          0,
+          {
+            "variable": "yellow_book",
+            "value": 5
+          }
+        ],
+        [
+          "TRY",
+          1,
+          {
+            "variable": "blue_book",
+            "value": 4
+          }
+        ],
+        [
+          "TRY",
+          2,
+          {
+            "variable": "white_book",
+            "value": 3
+          }
+        ],
+        [
+          "TRY",
+          3,
+          {
+            "variable": "purple_book",
+            "value": 2
+          }
+        ],
+        [
+          "TRY",
+          4,
+          {
+            "variable": "green_book",
+            "value": 1
+          }
+        ],
+        [
+          "SUCCESS",
+          5,
+          {
+            "assignments": {
+              "yellow_book": 5,
+              "blue_book": 4,
+              "white_book": 3,
+              "purple_book": 2,
+              "green_book": 1
+            }
+          }
+        ],
+        [
+          "BACKTRACK",
+          5,
+          {
+            "variable": "green_book",
+            "reason": "no more values to try"
+          }
+        ],
+        [
+          "TRY",
+          3,
+          {
+            "variable": "white_book",
+            "value": 2
+          }
+        ],
+        [
+          "FAIL",
+          2,
+          {
+            "variable": "white_book",
+            "value": 2,
+            "reason": "violates: AllDifferentConstraint([green_book, blue_book, white_book, purple_book, yellow_book])"
+          }
+        ],
+        [
+          "TRY",
+          3,
+          {
+            "variable": "white_book",
+            "value": 1
+          }
+        ],
+        [
+          "TRY",
+          3,
+          {
+            "variable": "purple_book",
+            "value": 2
+          }
+        ],
+        [
+          "TRY",
+          4,
+          {
+            "variable": "green_book",
+            "value": 3
+          }
+        ],
+        [
+          "SUCCESS",
+          5,
+          {
+            "assignments": {
+              "yellow_book": 5,
+              "blue_book": 4,
+              "white_book": 1,
+              "purple_book": 2,
+              "green_book": 3
+            }
+          }
+        ],
+        [
+          "BACKTRACK",
+          5,
+          {
+            "variable": "green_book",
+            "reason": "no more values to try"
+          }
+        ],
+        [
+          "TRY",
+          1,
+          {
+            "variable": "yellow_book",
+            "value": 4
+          }
+        ],
+        [
+          "FAIL",
+          0,
+          {
+            "variable": "yellow_book",
+            "value": 4,
+            "reason": "violates: yellow_book > blue_book"
+          }
+        ],
+        [
+          "TRY",
+          1,
+          {
+            "variable": "yellow_book",
+            "value": 3
+          }
+        ],
+        [
+          "FAIL",
+          0,
+          {
+            "variable": "yellow_book",
+            "value": 3,
+            "reason": "violates: yellow_book > blue_book"
+          }
+        ],
+        [
+          "TRY",
+          1,
+          {
+            "variable": "yellow_book",
+            "value": 2
+          }
+        ],
+        [
+          "FAIL",
+          0,
+          {
+            "variable": "yellow_book",
+            "value": 2,
+            "reason": "violates: yellow_book > blue_book"
+          }
+        ],
+        [
+          "TRY",
+          1,
+          {
+            "variable": "yellow_book",
+            "value": 1
+          }
+        ],
+        [
+          "FAIL",
+          0,
+          {
+            "variable": "yellow_book",
+            "value": 1,
+            "reason": "violates: yellow_book > blue_book"
+          }
+        ],
+        [
+          "BACKTRACK",
+          1,
+          {
+            "variable": "yellow_book",
+            "reason": "no more values to try"
+          }
+        ]
+      ],
+      "summary": {
+        "nodes": 13,
+        "fails": 5,
+        "max_depth": 5,
+        "time_sec": 0.000914
+      }
+    },
     "SAT_status_code": "success",
     "SAT_error_message": "",
     "SAT_predicted_answer": "A",
@@ -49,7 +257,215 @@
     "CSP_status_code": "success",
     "CSP_error_message": "",
     "CSP_predicted_answer": "D",
-    "CSP_reasoning": "=== CSP Solving Trace ===\n\nTRY: yellow_book = 5\n  TRY: blue_book = 4\n    TRY: white_book = 3\n      TRY: purple_book = 2\n        TRY: green_book = 1\n          SUCCESS: {'yellow_book': 5, 'blue_book': 4, 'white_book': 3, 'purple_book': 2, 'green_book': 1}\n          BACKTRACK: green_book (no more values to try)\n      TRY: white_book = 2\n    FAIL: white_book = 2 (violates: AllDifferentConstraint([green_book, blue_book, white_book, purple_book, yellow_book]))\n      TRY: white_book = 1\n      TRY: purple_book = 2\n        TRY: green_book = 3\n          SUCCESS: {'yellow_book': 5, 'blue_book': 4, 'white_book': 1, 'purple_book': 2, 'green_book': 3}\n          BACKTRACK: green_book (no more values to try)\n  TRY: yellow_book = 4\nFAIL: yellow_book = 4 (violates: yellow_book > blue_book)\n  TRY: yellow_book = 3\nFAIL: yellow_book = 3 (violates: yellow_book > blue_book)\n  TRY: yellow_book = 2\nFAIL: yellow_book = 2 (violates: yellow_book > blue_book)\n  TRY: yellow_book = 1\nFAIL: yellow_book = 1 (violates: yellow_book > blue_book)\n  BACKTRACK: yellow_book (no more values to try)",
+    "CSP_reasoning": {
+      "trace": [
+        [
+          "TRY",
+          0,
+          {
+            "variable": "yellow_book",
+            "value": 5
+          }
+        ],
+        [
+          "TRY",
+          1,
+          {
+            "variable": "blue_book",
+            "value": 4
+          }
+        ],
+        [
+          "TRY",
+          2,
+          {
+            "variable": "white_book",
+            "value": 3
+          }
+        ],
+        [
+          "TRY",
+          3,
+          {
+            "variable": "purple_book",
+            "value": 2
+          }
+        ],
+        [
+          "TRY",
+          4,
+          {
+            "variable": "green_book",
+            "value": 1
+          }
+        ],
+        [
+          "SUCCESS",
+          5,
+          {
+            "assignments": {
+              "yellow_book": 5,
+              "blue_book": 4,
+              "white_book": 3,
+              "purple_book": 2,
+              "green_book": 1
+            }
+          }
+        ],
+        [
+          "BACKTRACK",
+          5,
+          {
+            "variable": "green_book",
+            "reason": "no more values to try"
+          }
+        ],
+        [
+          "TRY",
+          3,
+          {
+            "variable": "white_book",
+            "value": 2
+          }
+        ],
+        [
+          "FAIL",
+          2,
+          {
+            "variable": "white_book",
+            "value": 2,
+            "reason": "violates: AllDifferentConstraint([green_book, blue_book, white_book, purple_book, yellow_book])"
+          }
+        ],
+        [
+          "TRY",
+          3,
+          {
+            "variable": "white_book",
+            "value": 1
+          }
+        ],
+        [
+          "TRY",
+          3,
+          {
+            "variable": "purple_book",
+            "value": 2
+          }
+        ],
+        [
+          "TRY",
+          4,
+          {
+            "variable": "green_book",
+            "value": 3
+          }
+        ],
+        [
+          "SUCCESS",
+          5,
+          {
+            "assignments": {
+              "yellow_book": 5,
+              "blue_book": 4,
+              "white_book": 1,
+              "purple_book": 2,
+              "green_book": 3
+            }
+          }
+        ],
+        [
+          "BACKTRACK",
+          5,
+          {
+            "variable": "green_book",
+            "reason": "no more values to try"
+          }
+        ],
+        [
+          "TRY",
+          1,
+          {
+            "variable": "yellow_book",
+            "value": 4
+          }
+        ],
+        [
+          "FAIL",
+          0,
+          {
+            "variable": "yellow_book",
+            "value": 4,
+            "reason": "violates: yellow_book > blue_book"
+          }
+        ],
+        [
+          "TRY",
+          1,
+          {
+            "variable": "yellow_book",
+            "value": 3
+          }
+        ],
+        [
+          "FAIL",
+          0,
+          {
+            "variable": "yellow_book",
+            "value": 3,
+            "reason": "violates: yellow_book > blue_book"
+          }
+        ],
+        [
+          "TRY",
+          1,
+          {
+            "variable": "yellow_book",
+            "value": 2
+          }
+        ],
+        [
+          "FAIL",
+          0,
+          {
+            "variable": "yellow_book",
+            "value": 2,
+            "reason": "violates: yellow_book > blue_book"
+          }
+        ],
+        [
+          "TRY",
+          1,
+          {
+            "variable": "yellow_book",
+            "value": 1
+          }
+        ],
+        [
+          "FAIL",
+          0,
+          {
+            "variable": "yellow_book",
+            "value": 1,
+            "reason": "violates: yellow_book > blue_book"
+          }
+        ],
+        [
+          "BACKTRACK",
+          1,
+          {
+            "variable": "yellow_book",
+            "reason": "no more values to try"
+          }
+        ]
+      ],
+      "summary": {
+        "nodes": 13,
+        "fails": 5,
+        "max_depth": 5,
+        "time_sec": 0.000678
+      }
+    },
     "SAT_status_code": "success",
     "SAT_error_message": "",
     "SAT_predicted_answer": "A",
