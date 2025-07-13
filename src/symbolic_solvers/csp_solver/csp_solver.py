@@ -27,7 +27,7 @@ class CSP_Program:
     
     def _parse_segment(self, program_str, key_phrase):
         remain_program_str, segment = program_str.split(key_phrase)
-        segment_list = segment.strip().split('\n')
+        segment_list = [line.strip() for line in segment.strip().split('\n') if line.strip()]
         for i in range(len(segment_list)):
             segment_list[i] = segment_list[i].split(':::')[0].strip()
         return remain_program_str, segment_list
@@ -107,6 +107,7 @@ class CSP_Program:
         
         # add variables
         for variable in self.Variables:
+            print(variable)
             variable_name, variable_domain = variable.split('[IN]')
             variable_name, variable_domain = variable_name.strip(), variable_domain.strip()
             # variable_domain = ast.literal_eval(variable_domain)
@@ -172,8 +173,8 @@ class CSP_Program:
     
 if __name__ == "__main__":
     logic_program = "Domain:\n1: leftmost\n5: rightmost\nVariables:\ngreen_book [IN] [1, 2, 3, 4, 5]\nblue_book [IN] [1, 2, 3, 4, 5]\nwhite_book [IN] [1, 2, 3, 4, 5]\npurple_book [IN] [1, 2, 3, 4, 5]\nyellow_book [IN] [1, 2, 3, 4, 5]\nConstraints:\nblue_book > yellow_book ::: The blue book is to the right of the yellow book.\nwhite_book < yellow_book ::: The white book is to the left of the yellow book.\nblue_book == 4 ::: The blue book is the second from the right.\npurple_book == 2 ::: The purple book is the second from the left.\nAllDifferentConstraint([green_book, blue_book, white_book, purple_book, yellow_book]) ::: All books have different values.\nQuery:\nA) green_book == 2 ::: The green book is the second from the left.\nB) blue_book == 2 ::: The blue book is the second from the left.\nC) white_book == 2 ::: The white book is the second from the left.\nD) purple_book == 2 ::: The purple book is the second from the left.\nE) yellow_book == 2 ::: The yellow book is the second from the left."
-    logic_program_2 = "Domain:\n1: oldest\n5: newest\nVariables:\nstation_wagon [IN] [1, 2, 3, 4, 5]\nsedan [IN] [1, 2, 3, 4, 5]\ntractor [IN] [1, 2, 3, 4, 5]\nmotorcycle [IN] [1, 2, 3, 4, 5]\nlimousine [IN] [1, 2, 3, 4, 5]\nConstraints:\ntractor > motorcycle ::: The tractor is newer than the motorcycle.\nmotorcycle > sedan ::: The motorcycle is newer than the sedan.\nlimousine == 1 ::: The limousine is the oldest.\nstation_wagon == 5 ::: The station wagon is the newest.\nAllDifferentConstraint([station_wagon, sedan, tractor, motorcycle, limousine]) ::: All vehicles have different values.\nQuery:\nA) station_wagon == 1 ::: The station wagon is the oldest.\nB) sedan == 1 ::: The sedan is the oldest.\nC) tractor == 1 ::: The tractor is the oldest.\nD) motorcycle == 1 ::: The motorcycle is the oldest.\nE) limousine == 1 ::: The limousine is the oldest."
-    csp_program = CSP_Program(logic_program_2, 'LogicalDeduction')
+    logic_program_2 = "Domain:\nObjects: Bob, Charlie, Dave, Fiona\nAttributes: cold, quiet, red, smart, kind, rough, round (each attribute is a boolean: true or false)\n\nVariables:\nBob_cold [IN] [true, false]\nBob_quiet [IN] [true, false]\nBob_red [IN] [true, false]\nBob_smart [IN] [true, false]\nBob_kind [IN] [true, false]\nBob_rough [IN] [true, false]\nBob_round [IN] [true, false] \nCharlie_cold [IN] [true, false]\nCharlie_quiet [IN] [true, false]\nCharlie_red [IN] [true, false]\nCharlie_smart [IN] [true, false]\nCharlie_kind [IN] [true, false]\nCharlie_rough [IN] [true, false]\nCharlie_round [IN] [true, false]\n\nDave_cold [IN] [true, false]\nDave_quiet [IN] [true, false]\nDave_red [IN] [true, false]\nDave_smart [IN] [true, false]\nDave_kind [IN] [true, false]\nDave_rough [IN] [true, false]\nDave_round [IN] [true, false]\n\nFiona_cold [IN] [true, false]\nFiona_quiet [IN] [true, false]\nFiona_red [IN] [true, false]\nFiona_smart [IN] [true, false]\nFiona_kind [IN] [true, false]\nFiona_rough [IN] [true, false]\nFiona_round [IN] [true, false]\n\nConstraints:\nBob_cold = true ::: Bob is cold.\nBob_quiet = true ::: Bob is quiet.\nBob_red = true ::: Bob is red.\nBob_smart = true ::: Bob is smart.\nCharlie_kind = true ::: Charlie is kind.\nCharlie_quiet = true ::: Charlie is quiet.\nCharlie_red = true ::: Charlie is red.\nCharlie_rough = true ::: Charlie is rough.\nDave_cold = true ::: Dave is cold.\nDave_kind = true ::: Dave is kind.\nDave_smart = true ::: Dave is smart.\nFiona_quiet = true ::: Fiona is quiet.\nFor all x in {Bob, Charlie, Dave, Fiona}: (x_quiet = true ∧ x_cold = true) → (x_smart = true) ::: If something is quiet and cold then it is smart.\nFor all x in {Bob, Charlie, Dave, Fiona}: (x_red = true ∧ x_cold = true) → (x_round = true) ::: Red, cold things are round.\nFor all x in {Bob, Charlie, Dave, Fiona}: (x_kind = true ∧ x_rough = true) → (x_red = true) ::: If something is kind and rough then it is red.\nFor all x in {Bob, Charlie, Dave, Fiona}: (x_quiet = true) → (x_rough = true) ::: All quiet things are rough.\nFor all x in {Bob, Charlie, Dave, Fiona}: (x_cold = true ∧ x_smart = true) → (x_red = true) ::: Cold, smart things are red.\nFor all x in {Bob, Charlie, Dave, Fiona}: (x_rough = true) → (x_cold = true) ::: If something is rough then it is cold.\nFor all x in {Bob, Charlie, Dave, Fiona}: (x_red = true) → (x_rough = true) ::: All red things are rough.\n(Dave_smart = true ∧ Dave_kind = true) → (Dave_quiet = true) ::: If Dave is smart and Dave is kind then Dave is quiet.\n\nQuery:\nCharlie_kind = true ::: Charlie is kind."
+    csp_program = CSP_Program(logic_program, 'LogicalDeduction')
     ans, err_msg, reasoning = csp_program.execute_program()
     print("Answer:", ans)
     print("Error:", err_msg)
@@ -181,6 +182,8 @@ if __name__ == "__main__":
     
     # 展示推理过程
     if reasoning:
-        from tracer import trace_to_text
         print("\nReasoning trace:")
-        print(trace_to_text(reasoning))
+        print(reasoning)
+
+
+    

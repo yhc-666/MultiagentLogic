@@ -341,7 +341,11 @@ if __name__ == "__main__":
     Conclusion:
     TakeOut(subway) ∧ ¬NegativeReviews(subway) ::: Subway provides take-out service and does not receive many negative reviews."""
     
-    prover9_program = FOL_Prover9_Program(logic_program_u)
+    logic_program_byfx = "Premises:\nCold(bob) ::: Bob is cold.\nQuiet(bob) ::: Bob is quiet.\nRed(bob) ::: Bob is red.\nSmart(bob) ::: Bob is smart.\nKind(charlie) ::: Charlie is kind.\nQuiet(charlie) ::: Charlie is quiet.\nRed(charlie) ::: Charlie is red.\nRough(charlie) ::: Charlie is rough.\nCold(dave) ::: Dave is cold.\nKind(dave) ::: Dave is kind.\nSmart(dave) ::: Dave is smart.\nQuiet(fiona) ::: Fiona is quiet.\n∀x (Quiet(x) ∧ Cold(x) → Smart(x)) ::: If something is quiet and cold then it is smart.\n∀x (Red(x) ∧ Cold(x) → Round(x)) ::: Red, cold things are round.\n∀x (Kind(x) ∧ Rough(x) → Red(x)) ::: If something is kind and rough then it is red.\n∀x (Quiet(x) → Rough(x)) ::: All quiet things are rough.\n∀x (Cold(x) ∧ Smart(x) → Red(x)) ::: Cold, smart things are red.\n∀x (Rough(x) → Cold(x)) ::: If something is rough then it is cold.\n∀x (Red(x) → Rough(x)) ::: All red things are rough.\n(Smart(dave) ∧ Kind(dave)) → Quiet(dave) ::: If Dave is smart and Dave is kind then Dave is quiet.\nConclusion:\nKind(charlie) ::: Charlie is kind."
+    # ground-truth: True
+    prover9_program = FOL_Prover9_Program(logic_program_byfx)
     result, error_message, reasoning = prover9_program.execute_program()
     print('result:', result)
     print('reasoning:', reasoning)
+
+    

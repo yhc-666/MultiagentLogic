@@ -64,6 +64,7 @@ class LogicInferenceEngine:
             answer = self.backup_generators[key].get_backup_answer(example_id)
             return answer, 'execution error', err, ''
 
+        # answer 为各solver原始输出, 需要通过answer_mapping映射为option
         mapped = program.answer_mapping(answer)
         return mapped, 'success', '', reasoning
 
